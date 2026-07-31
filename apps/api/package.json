@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node ../../scripts/fix-dist-imports.mjs dist",
     "start": "node dist/server.js",
     "compare:abm-label": "tsx scripts/compare-abm-label.ts",
     "dev": "node --import tsx --watch src/server.ts",

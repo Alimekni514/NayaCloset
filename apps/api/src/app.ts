@@ -9,12 +9,12 @@ import { logger } from './config/logger';
 import { requestIdMiddleware } from './lib/request-id';
 import { errorHandler } from './middleware/error-handler';
 import { notFoundHandler } from './middleware/not-found';
-import { abmRouter } from './modules/abm';
-import { adminOrdersRouter } from './routes/admin/admin-orders.route';
-import { authRouter } from './routes/auth/auth.route';
-import { healthRouter } from './routes/health.route';
-import { ordersRouter } from './routes/orders/orders.route';
-import { productsRouter } from './routes/products/products.route';
+import { abmRouter } from './modules/abm/index.js';
+import { adminOrdersRouter } from './routes/admin/admin-orders.route.js';
+import { authRouter } from './routes/auth/auth.route.js';
+import { healthRouter } from './routes/health.route.js';
+import { ordersRouter } from './routes/orders/orders.route.js';
+import { productsRouter } from './routes/products/products.route.js';
 
 export const app = express();
 
