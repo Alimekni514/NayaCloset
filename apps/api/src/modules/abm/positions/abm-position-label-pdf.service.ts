@@ -12,9 +12,18 @@ let browserPromise: Promise<Browser> | null = null;
 let closeHooksRegistered = false;
 let rendererOverride: PdfRenderer | null = null;
 
+const getChromiumLaunchOptions = () => ({
+  headless: true,
+  ...(process.platform === 'linux'
+    ? {
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      }
+    : {}),
+});
+
 const ensureBrowser = async (): Promise<Browser> => {
   if (!browserPromise) {
-    browserPromise = chromium.launch({ headless: true });
+    browserPromise = chromium.launch(getChromiumLaunchOptions());
   }
 
   if (!closeHooksRegistered) {

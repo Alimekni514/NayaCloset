@@ -47,7 +47,11 @@ const createApiError = (error: AxiosError<ErrorPayload>): ApiError => {
   };
 };
 
-const baseURL = webEnv.VITE_API_BASE_URL ?? 'http://localhost:4000/api';
+const baseURL =
+  webEnv.VITE_API_BASE_URL ??
+  (typeof window !== 'undefined'
+    ? `${window.location.origin}/api`
+    : 'http://localhost:4000/api');
 
 const refreshClient = axios.create({
   baseURL,
