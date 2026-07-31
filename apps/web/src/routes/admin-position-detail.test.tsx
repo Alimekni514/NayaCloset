@@ -189,8 +189,8 @@ describe('ABM position detail UI', () => {
     await user.click(screen.getByRole('button', { name: /Imprimer/i }));
 
     expect(screen.getByText('Previsualiser etiquette normale')).toBeInTheDocument();
-    expect(screen.getByText('Telecharger version imprimable')).toBeInTheDocument();
+    expect(screen.getByText('Telecharger l\'etiquette normale PDF')).toBeInTheDocument();
     expect(screen.getByText('Previsualiser etiquette Zebra')).toBeInTheDocument();
-    expect(screen.getByText('Telecharger version imprimable Zebra')).toBeInTheDocument();
+    expect(screen.getByText('Telecharger l\'etiquette Zebra PDF')).toBeInTheDocument();
   });
 });

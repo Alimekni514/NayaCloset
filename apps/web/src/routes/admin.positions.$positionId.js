@@ -101,11 +101,8 @@ function mapPrintError(error) {
         if (code === 'ABM_LABEL_FETCH_FAILED') {
             return "Impossible de previsualiser l'etiquette.";
         }
-        if (code === 'ABM_LABEL_PDF_GENERATION_FAILED') {
-            return "Impossible de generer le PDF de l'etiquette.";
-        }
     }
-    return "Impossible de preparer l'etiquette.";
+    return "Impossible de generer le PDF.";
 }
 function mergeDetailWithListContext(detail, listItem) {
     if (!listItem) {
@@ -203,14 +200,14 @@ function PositionDetailPage() {
             const variant = getPositionLabelActionVariant(action);
             const kind = getPositionLabelActionKind(action);
             const label = await fetchAbmPositionLabelDocument(positionId, variant, kind);
-            const result = presentPositionLabelDocument({
+            const result = await presentPositionLabelDocument({
                 label,
                 action,
                 positionId,
                 popup,
             });
             if (kind === 'pdf') {
-                toast.success('PDF prepare', { description: result.filename });
+                toast.success('Le PDF a ete telecharge.', { description: result.filename });
             }
         }
         catch (error) {

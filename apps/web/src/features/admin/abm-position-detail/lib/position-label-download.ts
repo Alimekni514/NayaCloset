@@ -3,6 +3,7 @@ import type {
   AbmLabelVariant,
   AbmPositionLabelBlobResponse,
 } from '../api/abm-position-detail-api';
+import { downloadPositionLabelPdf } from './position-label-pdf-generator';
 
 export type PositionLabelAction =
   | 'preview-normal'
@@ -80,7 +81,7 @@ const buildDefaultFilename = (
   return `ABM-position-${positionId}-${variant}.${extension}`;
 };
 
-export function presentPositionLabelDocument({
+export async function presentPositionLabelDocument({
   label,
   action,
   positionId,
@@ -113,19 +114,30 @@ export function presentPositionLabelDocument({
     } else {
       popup.location.replace(objectUrl);
     }
+
+    window.setTimeout(() => {
+      for (const url of urlsToRevoke) {
+        URL.revokeObjectURL(url);
+      }
+    }, 60_000);
+
+    return { filename, objectUrl: urlsToRevoke.at(-1) ?? objectUrl };
   } else {
-    const link = document.createElement('a');
-    link.href = objectUrl;
-    link.download = filename;
-    link.rel = 'noopener';
-    link.click();
+    // Generate PDF client-side
+    const htmlContent = await label.blob.text();
+    // Use .pdf extension for the generated file
+    const pdfFilename = filename.replace(/\.html$/i, '.pdf');
+    
+    await downloadPositionLabelPdf({
+      positionId,
+      variant,
+      htmlContent,
+      filename: pdfFilename,
+    });
+
+    // Cleanup the objectURL we created but didn't use for popup
+    URL.revokeObjectURL(objectUrl);
+
+    return { filename: pdfFilename, objectUrl: '' };
   }
-
-  window.setTimeout(() => {
-    for (const url of urlsToRevoke) {
-      URL.revokeObjectURL(url);
-    }
-  }, 60_000);
-
-  return { filename, objectUrl: urlsToRevoke.at(-1) ?? objectUrl };
 }

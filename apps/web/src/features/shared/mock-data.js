@@ -12,6 +12,66 @@ export const categories = [
     { id: "c3", slug: "mode", name: "Mode", description: "Cuir, lin et accessoires" },
     { id: "c4", slug: "beaute", name: "Beauté", description: "Soins naturels et huiles bio" },
 ];
+export const demoProducts = [
+    {
+        id: "demo-p1",
+        slug: "casque-audio-pro",
+        name: "Casque audio Pro",
+        description: "Casque sans fil avec réduction de bruit, autonomie longue durée et son immersif.",
+        price: 279.9,
+        compareAtPrice: 329.9,
+        categoryId: "c1",
+        stock: 18,
+        images: [casque, casque],
+        rating: 4.8,
+        featured: true,
+        createdAt: "2026-07-01T09:00:00.000Z",
+    },
+    {
+        id: "demo-p2",
+        slug: "montre-connectee-lite",
+        name: "Montre connectée Lite",
+        description: "Montre élégante avec suivi du rythme cardiaque, notifications et résistance à l'eau.",
+        price: 189,
+        categoryId: "c1",
+        stock: 27,
+        images: [montre, montre],
+        rating: 4.5,
+        featured: false,
+        createdAt: "2026-07-03T09:00:00.000Z",
+    },
+    {
+        id: "demo-p3",
+        slug: "enceinte-bluetooth-mini",
+        name: "Enceinte Bluetooth Mini",
+        description: "Enceinte compacte avec basses puissantes, connexion rapide et design portable.",
+        price: 99.9,
+        compareAtPrice: 119.9,
+        categoryId: "c1",
+        stock: 35,
+        images: [enceinte, enceinte],
+        rating: 4.4,
+        featured: false,
+        createdAt: "2026-07-05T09:00:00.000Z",
+    },
+];
+export const demoProductCards = [
+    {
+        name: 'Casque audio Pro',
+        price: 279.9,
+        image: casque,
+    },
+    {
+        name: 'Montre connectée Lite',
+        price: 189,
+        image: montre,
+    },
+    {
+        name: 'Enceinte Bluetooth Mini',
+        price: 99.9,
+        image: enceinte,
+    },
+];
 export const products = [
     {
         id: "p1",

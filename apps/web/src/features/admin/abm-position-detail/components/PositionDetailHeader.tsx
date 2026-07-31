@@ -77,8 +77,8 @@ export function PositionDetailHeader({
               >
                 <Download className="size-4" />
                 {isActionLoading(printLoadingAction, 'pdf-normal')
-                  ? 'Preparation du document normal...'
-                  : 'Telecharger version imprimable'}
+                  ? 'Preparation du PDF normal...'
+                  : 'Telecharger l\'etiquette normale PDF'}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -96,8 +96,8 @@ export function PositionDetailHeader({
               >
                 <Download className="size-4" />
                 {isActionLoading(printLoadingAction, 'pdf-zebra')
-                  ? 'Preparation du document Zebra...'
-                  : 'Telecharger version imprimable Zebra'}
+                  ? 'Preparation du PDF Zebra...'
+                  : 'Telecharger l\'etiquette Zebra PDF'}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

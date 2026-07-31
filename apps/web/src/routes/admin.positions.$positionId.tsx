@@ -131,7 +131,7 @@ function mapPrintError(error: unknown): string {
     }
   }
 
-  return "Impossible de preparer l'etiquette.";
+  return "Impossible de generer le PDF.";
 }
 
 function mergeDetailWithListContext(
@@ -254,7 +254,7 @@ function PositionDetailPage() {
       const variant = getPositionLabelActionVariant(action);
       const kind = getPositionLabelActionKind(action);
       const label = await fetchAbmPositionLabelDocument(positionId, variant, kind);
-      const result = presentPositionLabelDocument({
+      const result = await presentPositionLabelDocument({
         label,
         action,
         positionId,
@@ -262,7 +262,7 @@ function PositionDetailPage() {
       });
 
       if (kind === 'pdf') {
-        toast.success('Document pret', { description: result.filename });
+        toast.success('Le PDF a ete telecharge.', { description: result.filename });
       }
     } catch (error) {
       if (popup) {

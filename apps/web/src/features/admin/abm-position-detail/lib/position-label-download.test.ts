@@ -7,6 +7,7 @@ import {
   PopupBlockedError,
   presentPositionLabelDocument,
 } from './position-label-download';
+import * as pdfGenerator from './position-label-pdf-generator';
 
 describe('position label download helpers', () => {
   afterEach(() => {
@@ -43,7 +44,7 @@ describe('position label download helpers', () => {
     expect(openSpy).toHaveBeenCalledWith('', '_blank');
   });
 
-  it('creates and revokes a blob URL for preview actions', () => {
+  it('creates and revokes a blob URL for preview actions', async () => {
     vi.useFakeTimers();
     mockUrlApis();
     const replaceSpy = vi.fn();
@@ -54,7 +55,7 @@ describe('position label download helpers', () => {
       .mockReturnValueOnce('blob:preview');
     const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => { });
 
-    presentPositionLabelDocument({
+    await presentPositionLabelDocument({
       label: {
         blob: new Blob(['%PDF-1.7'], { type: 'application/pdf' }),
         contentType: 'application/pdf',
@@ -73,21 +74,20 @@ describe('position label download helpers', () => {
     expect(revokeObjectUrlSpy).toHaveBeenCalledWith('blob:preview');
   });
 
-  it('downloads PDF actions instead of opening them', () => {
-    vi.useFakeTimers();
+  it('generates PDF actions instead of opening them', async () => {
     mockUrlApis();
     const createObjectUrlSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:pdf');
     const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => { });
-    const clickSpy = vi.fn();
-    const anchor = document.createElement('a');
-    anchor.click = clickSpy;
-    vi.spyOn(document, 'createElement').mockReturnValue(anchor);
+    const downloadPdfSpy = vi.spyOn(pdfGenerator, 'downloadPositionLabelPdf').mockResolvedValue(undefined);
 
-    presentPositionLabelDocument({
+    const mockBlob = new Blob(['<html>...</html>'], { type: 'text/html' });
+    mockBlob.text = vi.fn().mockResolvedValue('<html>...</html>');
+
+    await presentPositionLabelDocument({
       label: {
-        blob: new Blob(['%PDF-1.7'], { type: 'application/pdf' }),
-        contentType: 'application/pdf',
-        filename: 'ABM-position-469384-zebra.pdf',
+        blob: mockBlob,
+        contentType: 'text/html',
+        filename: 'ABM-position-469384-zebra.html',
       },
       action: 'pdf-zebra',
       positionId: '469384',
@@ -95,18 +95,23 @@ describe('position label download helpers', () => {
     });
 
     expect(createObjectUrlSpy).toHaveBeenCalledTimes(1);
-    expect(anchor.download).toBe('ABM-position-469384-zebra.pdf');
-    expect(clickSpy).toHaveBeenCalledTimes(1);
-    vi.runAllTimers();
+    expect(downloadPdfSpy).toHaveBeenCalledTimes(1);
+    expect(downloadPdfSpy).toHaveBeenCalledWith({
+      positionId: '469384',
+      variant: 'zebra',
+      htmlContent: '<html>...</html>',
+      filename: 'ABM-position-469384-zebra.pdf',
+    });
+    // It should immediately revoke the unused object URL for pdf actions
     expect(revokeObjectUrlSpy).toHaveBeenCalledWith('blob:pdf');
   });
 
-  it('throws a popup-blocked error if a preview action has no popup window', () => {
+  it('throws a popup-blocked error if a preview action has no popup window', async () => {
     mockUrlApis();
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:blocked');
     const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => { });
 
-    expect(() =>
+    await expect(() =>
       presentPositionLabelDocument({
         label: {
           blob: new Blob(['safe'], { type: 'text/html' }),
@@ -117,7 +122,7 @@ describe('position label download helpers', () => {
         positionId: '469384',
         popup: null,
       }),
-    ).toThrow(PopupBlockedError);
+    ).rejects.toThrow(PopupBlockedError);
     expect(revokeObjectUrlSpy).toHaveBeenCalledWith('blob:blocked');
   });
 });
