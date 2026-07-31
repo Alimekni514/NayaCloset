@@ -1,7 +1,7 @@
 import { app } from './app';
 import { env } from './config/env';
 import { logger } from './config/logger';
-import { connectToDatabase } from './db/connect';
+import { connectToDatabase, registerGracefulShutdown } from './db/connect';
 
 // Render injects PORT at runtime; fall back to the configured API_PORT for local dev.
 const port = Number(process.env['PORT'] ?? env.API_PORT);
@@ -23,9 +23,13 @@ const start = async (): Promise<void> => {
   }
 
   await connectToDatabase();
-  app.listen(port, host, () => {
+
+  const server = app.listen(port, host, () => {
     logger.info({ port, host }, 'API server listening');
   });
+
+  // Register SIGTERM / SIGINT handlers for graceful shutdown (Render, Docker, etc.)
+  registerGracefulShutdown(server);
 };
 
 void start();
