@@ -3,11 +3,10 @@ import type { AbmLabelVariant } from '../api/abm-position-detail-api';
 
 // ABM labels typically use 'size: 7in 9.25in' (177.8mm x 234.95mm).
 // We set jsPDF dimensions accordingly to prevent right/bottom clipping.
-const LABEL_PDF_CONFIG: Record<AbmLabelVariant, { widthMm: number; heightMm: number }> = {
-  normal: { widthMm: 177.8, heightMm: 234.95 },
-  // Zebra labels might be smaller in reality but typically are rendered properly within the same bounds,
-  // or they scale to fit. Using the same safe bounding box based on the CSS size.
-  zebra: { widthMm: 177.8, heightMm: 234.95 },
+// normal labels are traditionally printed in landscape on roughly A5 dimensions (210mm x 148mm)
+const LABEL_PDF_CONFIG: Record<AbmLabelVariant, { format: string | [number, number]; orientation: 'portrait' | 'landscape'; widthMm: number }> = {
+  normal: { format: 'a5', orientation: 'landscape', widthMm: 210 },
+  zebra: { format: [177.8, 234.95], orientation: 'portrait', widthMm: 177.8 },
 };
 
 /**
@@ -116,7 +115,7 @@ export async function downloadPositionLabelPdf({
 
     await Promise.all([waitForImages(container), waitForFonts()]);
 
-    const dimensions = LABEL_PDF_CONFIG[variant];
+    const config = LABEL_PDF_CONFIG[variant];
 
     const options = {
       margin: 0,
@@ -129,13 +128,13 @@ export async function downloadPositionLabelPdf({
         logging: false,
         scrollX: 0,
         scrollY: 0,
-        windowWidth: container.scrollWidth,
+        windowWidth: Math.max(container.scrollWidth, config.widthMm * 3.7795275591), // approximate px from mm at 96dpi
         windowHeight: container.scrollHeight,
       },
       jsPDF: {
         unit: 'mm',
-        format: [dimensions.widthMm, dimensions.heightMm] as [number, number],
-        orientation: 'portrait' as const,
+        format: config.format,
+        orientation: config.orientation,
         compress: true,
       },
       pagebreak: {

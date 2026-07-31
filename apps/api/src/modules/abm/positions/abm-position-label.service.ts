@@ -277,7 +277,7 @@ const normalizeNormalLabelSignatureRow = (markup: string): string => {
           'margin:0',
           'padding:5px',
           'box-sizing:border-box',
-          'border:2px solid #1f1f1f',
+          'border:1px solid #000',
           'overflow:hidden',
         ].join('; '),
       );
@@ -307,11 +307,10 @@ const buildWrappedPreviewHtml = async ({
 
   if (isNormal) {
     const normalizedContentHtml = normalizeNormalLabelSignatureRow(contentHtml);
-    const bodyStyles =
-      mode === 'pdf'
-        ? 'margin: 8px; background: #fff; color: #000; font-family: "Times New Roman", "Liberation Serif", Times, serif; -webkit-print-color-adjust: exact; print-color-adjust: exact;'
-        : 'margin: 8px; background: #fff; color: #000; font-family: "Times New Roman", "Liberation Serif", Times, serif; -webkit-print-color-adjust: exact; print-color-adjust: exact;';
-    const pageRule = mode === 'pdf' ? '@page { size: A4 landscape; margin: 3mm; }' : '@page { size: auto A4 landscape; margin: 3mm; }';
+    const bodyStyles = mode === 'pdf'
+      ? 'margin: 0; padding: 5mm; background: #fff; color: #000; font-family: "Times New Roman", "Liberation Serif", Times, serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; width: 100%; box-sizing: border-box;'
+      : 'margin: 0 auto; padding: 5mm; background: #fff; color: #000; font-family: "Times New Roman", "Liberation Serif", Times, serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; max-width: 210mm; box-sizing: border-box;';
+    const pageRule = '@page { size: A5 landscape; margin: 0; }';
 
     return [
       '<!doctype html>',
@@ -324,13 +323,13 @@ const buildWrappedPreviewHtml = async ({
       pageRule,
       'html { background: #fff; }',
       `body { ${bodyStyles} }`,
-      'table { border-collapse: collapse; border-spacing: 0; }',
-      'table[border="1"] { border: 1.8px solid #1f1f1f; border-radius: 5px; }',
-      'table[border="1"] td, table[border="1"] th { border: 1px solid #9f9f9f; padding: 0; vertical-align: middle; }',
-      'table[border="1"] > tbody > tr:first-child > td { border-top-color: #1f1f1f; }',
-      'table[border="1"] > tbody > tr > td:first-child { border-left-color: #1f1f1f; }',
-      'table[border="1"] > tbody > tr > td:last-child { border-right-color: #1f1f1f; }',
-      'table[border="1"] > tbody > tr:last-child > td { border-bottom-color: #1f1f1f; }',
+      'table { border-collapse: collapse; border-spacing: 0; width: 100%; }',
+      'table[border="1"] { border: 3px solid #000; border-radius: 0; }',
+      'table[border="1"] td, table[border="1"] th { border: 1px solid #000; padding: 4px; vertical-align: middle; text-align: center; }',
+      'table[border="1"] > tbody > tr:first-child > td { border-top: none; }',
+      'table[border="1"] > tbody > tr > td:first-child { border-left: none; }',
+      'table[border="1"] > tbody > tr > td:last-child { border-right: none; }',
+      'table[border="1"] > tbody > tr:last-child > td { border-bottom: none; }',
       'svg { display: block; overflow: visible; shape-rendering: crispEdges; text-rendering: geometricPrecision; }',
       'svg rect { shape-rendering: crispEdges; }',
       'svg path { shape-rendering: crispEdges; }',

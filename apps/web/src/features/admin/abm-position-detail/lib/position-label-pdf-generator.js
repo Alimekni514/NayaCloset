@@ -1,11 +1,10 @@
 import html2pdf from 'html2pdf.js';
 // ABM labels typically use 'size: 7in 9.25in' (177.8mm x 234.95mm).
 // We set jsPDF dimensions accordingly to prevent right/bottom clipping.
+// normal labels are traditionally printed in landscape on roughly A5 dimensions (210mm x 148mm)
 const LABEL_PDF_CONFIG = {
-    normal: { widthMm: 177.8, heightMm: 234.95 },
-    // Zebra labels might be smaller in reality but typically are rendered properly within the same bounds,
-    // or they scale to fit. Using the same safe bounding box based on the CSS size.
-    zebra: { widthMm: 177.8, heightMm: 234.95 },
+    normal: { format: 'a5', orientation: 'landscape', widthMm: 210 },
+    zebra: { format: [177.8, 234.95], orientation: 'portrait', widthMm: 177.8 },
 };
 /**
  * Parses the backend HTML response safely, removing scripts to prevent execution.
@@ -35,10 +34,10 @@ function parseSafeHtml(html) {
  */
 function mountRenderContainer(doc) {
     const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-100000px';
+    container.style.position = 'absolute';
+    container.style.left = '0';
     container.style.top = '0';
-    container.style.visibility = 'visible';
+    container.style.zIndex = '-9999';
     container.style.pointerEvents = 'none';
     container.style.background = '#fff';
     // Extract the main print container, or fallback to body contents
@@ -88,7 +87,7 @@ export async function downloadPositionLabelPdf({ positionId, variant, htmlConten
         const safeDoc = parseSafeHtml(htmlContent);
         container = mountRenderContainer(safeDoc);
         await Promise.all([waitForImages(container), waitForFonts()]);
-        const dimensions = LABEL_PDF_CONFIG[variant];
+        const config = LABEL_PDF_CONFIG[variant];
         const options = {
             margin: 0,
             filename,
@@ -100,13 +99,13 @@ export async function downloadPositionLabelPdf({ positionId, variant, htmlConten
                 logging: false,
                 scrollX: 0,
                 scrollY: 0,
-                windowWidth: container.scrollWidth,
+                windowWidth: Math.max(container.scrollWidth, config.widthMm * 3.7795275591), // approximate px from mm at 96dpi
                 windowHeight: container.scrollHeight,
             },
             jsPDF: {
                 unit: 'mm',
-                format: [dimensions.widthMm, dimensions.heightMm],
-                orientation: 'portrait',
+                format: config.format,
+                orientation: config.orientation,
                 compress: true,
             },
             pagebreak: {
