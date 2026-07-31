@@ -1,0 +1,27 @@
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { Link, createFileRoute } from '@tanstack/react-router';
+import { AuthGuard } from '@/features/auth';
+import { useOrder } from '@/features/shared/queries';
+import { formatDateTime, formatTND } from '@/lib/format';
+import { ErrorState, LoadingSkeleton } from '@/components/common/states';
+import { OrderStatusBadge } from '@/components/common/OrderStatusBadge';
+import { OrderTimeline } from '@/components/common/OrderTimeline';
+import { StoreLayout } from '@/components/store/StoreLayout';
+import { Separator } from '@/components/ui/separator';
+export const Route = createFileRoute('/compte/commandes/$orderId')({
+    head: () => ({
+        meta: [
+            { title: 'Detail de commande - Dar Souk' },
+            {
+                name: 'description',
+                content: 'Suivi detaille de votre commande : articles, adresse et statut de livraison.',
+            },
+        ],
+    }),
+    component: CustomerOrderPage,
+});
+function CustomerOrderPage() {
+    const { orderId } = Route.useParams();
+    const { data: order, isLoading, error, refetch } = useOrder(orderId);
+    return (_jsx(StoreLayout, { children: _jsx(AuthGuard, { children: _jsx("div", { className: "mx-auto max-w-4xl px-4 py-10 sm:px-6", children: isLoading ? (_jsx(LoadingSkeleton, { count: 4 })) : error || !order ? (_jsx(ErrorState, { message: "Commande introuvable.", onRetry: () => refetch() })) : (_jsxs(_Fragment, { children: [_jsxs("nav", { className: "text-sm text-muted-foreground", children: [_jsx(Link, { to: "/compte/commandes", className: "hover:text-foreground", children: "Mes commandes" }), _jsx("span", { "aria-hidden": true, children: " / " }), _jsx("span", { className: "text-foreground", children: order.reference })] }), _jsxs("header", { className: "mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4", children: [_jsxs("div", { className: "min-w-0", children: [_jsx("h1", { className: "truncate font-display text-3xl font-semibold", children: order.reference }), _jsxs("p", { className: "text-sm text-muted-foreground", children: ["Passee le ", formatDateTime(order.createdAt)] })] }), _jsx(OrderStatusBadge, { status: order.status })] }), _jsxs("div", { className: "mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]", children: [_jsxs("div", { className: "space-y-6", children: [_jsxs("section", { className: "surface-card p-6", children: [_jsx("h2", { className: "font-display text-xl font-semibold", children: "Suivi de livraison" }), _jsx("div", { className: "mt-6", children: _jsx(OrderTimeline, { events: order.timeline }) }), order.abm.trackingNumber ? (_jsxs("p", { className: "mt-6 text-sm text-muted-foreground", children: ["Numero de suivi transporteur :", ' ', _jsx("span", { className: "font-semibold text-foreground", children: order.abm.trackingNumber })] })) : null, order.rejectionReason ? (_jsxs("p", { className: "mt-6 rounded-2xl bg-destructive/10 p-4 text-sm text-destructive", children: ["Motif du rejet : ", order.rejectionReason] })) : null] }), _jsxs("section", { className: "surface-card p-6", children: [_jsx("h2", { className: "font-display text-xl font-semibold", children: "Articles" }), _jsx("ul", { className: "mt-4 space-y-4", children: order.items.map((item) => (_jsxs("li", { className: "flex items-center gap-3", children: [_jsx("img", { src: item.image, alt: "", loading: "lazy", className: "size-16 shrink-0 rounded-xl object-cover" }), _jsxs("div", { className: "min-w-0 flex-1", children: [_jsx("p", { className: "truncate text-sm font-medium", children: item.name }), _jsxs("p", { className: "text-xs text-muted-foreground", children: [item.quantity, " x ", formatTND(item.unitPrice)] })] }), _jsx("p", { className: "shrink-0 font-semibold", children: formatTND(item.unitPrice * item.quantity) })] }, item.productId))) })] })] }), _jsxs("aside", { className: "space-y-6", children: [_jsxs("section", { className: "surface-card p-6", children: [_jsx("h2", { className: "font-display text-lg font-semibold", children: "Adresse de livraison" }), _jsxs("address", { className: "mt-3 space-y-1 text-sm not-italic text-muted-foreground", children: [_jsxs("p", { className: "font-medium text-foreground", children: [order.address.firstName, " ", order.address.lastName] }), _jsx("p", { children: order.address.addressLine1 }), order.address.addressLine2 ? _jsx("p", { children: order.address.addressLine2 }) : null, _jsxs("p", { children: [order.address.locality, ", ", order.address.city] }), _jsxs("p", { children: [order.address.postalCode, " ", order.address.governorate] }), _jsx("p", { children: order.address.phone })] })] }), _jsxs("section", { className: "surface-card space-y-2 p-6 text-sm", children: [_jsx("h2", { className: "font-display text-lg font-semibold", children: "Total" }), _jsxs("div", { className: "flex justify-between", children: [_jsx("span", { className: "text-muted-foreground", children: "Sous-total" }), _jsx("span", { children: formatTND(order.subtotal) })] }), _jsxs("div", { className: "flex justify-between", children: [_jsx("span", { className: "text-muted-foreground", children: "Livraison" }), _jsx("span", { children: order.shippingFee === 0 ? 'Offerte' : formatTND(order.shippingFee) })] }), _jsx(Separator, {}), _jsxs("div", { className: "flex justify-between text-base font-semibold", children: [_jsx("span", { children: "A payer a la livraison" }), _jsx("span", { children: formatTND(order.total) })] })] })] })] })] })) }) }) }));
+}

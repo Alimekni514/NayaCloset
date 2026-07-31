@@ -1,0 +1,15 @@
+process.env.NODE_ENV = 'test';
+process.env.API_PORT = '4001';
+process.env.WEB_ORIGIN = 'http://localhost:5173';
+process.env.MONGODB_URI = 'mongodb://127.0.0.1:27017/delivery-commerce-test';
+process.env.JWT_ACCESS_SECRET = 'test-access-secret-value-should-be-long';
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-value-should-be-long';
+process.env.COOKIE_DOMAIN = '';
+process.env.COOKIE_SAME_SITE = 'strict';
+process.env.COOKIE_SECURE = 'false';
+process.env.RATE_LIMIT_WINDOW_MS = '900000';
+process.env.RATE_LIMIT_MAX_REQUESTS = '500';
+process.env.ABM_BASE_URL = 'http://127.0.0.1:4105';
+process.env.ABM_USERNAME = 'abm-test-user';
+process.env.ABM_PASSWORD = 'abm-test-password';
+process.env.ABM_REQUEST_TIMEOUT_MS = '15000';

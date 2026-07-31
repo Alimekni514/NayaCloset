@@ -1,0 +1,21 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { Eye, Pencil, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { formatTND } from '@/lib/format';
+import { formatShortDate, formatShortTime } from '../lib/position-formatters';
+import { PositionStatusBadge } from './PositionStatusBadge';
+function Field({ label, value }) {
+    return (_jsxs("div", { className: "min-w-0", children: [_jsx("dt", { className: "text-xs font-medium uppercase tracking-wide text-muted-foreground", children: label }), _jsx("dd", { className: "mt-0.5 break-words text-sm font-medium", children: value })] }));
+}
+function Section({ title, children }) {
+    return (_jsxs("div", { className: "rounded-2xl border border-border bg-card p-4", children: [_jsx("h4", { className: "font-display text-sm font-semibold", children: title }), _jsx("dl", { className: "mt-3 space-y-3", children: children })] }));
+}
+export function PositionExpandedDetails({ position, onView, onEdit, onDelete, }) {
+    const { canEdit, canDelete } = position.permissions;
+    const address = [position.destination.addressLine1, position.destination.addressLine2]
+        .filter(Boolean)
+        .join(', ');
+    return (_jsxs("div", { className: "rounded-2xl bg-secondary/50 p-4 sm:p-5", children: [_jsxs("div", { className: "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4", children: [_jsxs(Section, { title: "Contact", children: [_jsx(Field, { label: "Nom complet", value: position.recipient.fullName }), _jsx(Field, { label: "T\u00E9l\u00E9phone", value: position.recipient.phone }), _jsx(Field, { label: "Email", value: position.recipient.email ?? '—' })] }), _jsxs(Section, { title: "Livraison", children: [_jsx(Field, { label: "Gouvernorat", value: position.destination.governorate }), _jsx(Field, { label: "Ville", value: position.destination.city }), _jsx(Field, { label: "Cit\u00E9", value: position.destination.locality }), _jsx(Field, { label: "Code postal", value: position.destination.postalCode }), _jsx(Field, { label: "Adresse compl\u00E8te", value: address || '—' })] }), _jsxs(Section, { title: "Exp\u00E9dition", children: [_jsx(Field, { label: "Service", value: position.service }), _jsx(Field, { label: "COD", value: formatTND(position.codAmount) }), _jsx(Field, { label: "Nombre de pi\u00E8ces", value: String(position.pieces) }), _jsx(Field, { label: "Tentatives", value: String(position.deliveryAttempts) })] }), _jsxs(Section, { title: "Suivi", children: [_jsxs("div", { children: [_jsx("dt", { className: "text-xs font-medium uppercase tracking-wide text-muted-foreground", children: "Statut actuel" }), _jsx("dd", { className: "mt-1", children: _jsx(PositionStatusBadge, { statusCategory: position.statusCategory, statusLabel: position.statusLabel }) })] }), _jsx(Field, { label: "Derni\u00E8re mise \u00E0 jour", value: position.updatedAt
+                                    ? `${formatShortDate(position.updatedAt)} · ${formatShortTime(position.updatedAt)}`
+                                    : '—' }), _jsxs("div", { children: [_jsx("dt", { className: "text-xs font-medium uppercase tracking-wide text-muted-foreground", children: "Suivi" }), _jsxs("dd", { className: "mt-2 flex items-center gap-1.5", "aria-hidden": true, children: [_jsx("span", { className: "size-2 rounded-full bg-primary" }), _jsx("span", { className: "h-0.5 flex-1 bg-primary/30" }), _jsx("span", { className: "size-2 rounded-full bg-primary/40" }), _jsx("span", { className: "h-0.5 flex-1 bg-border" }), _jsx("span", { className: "size-2 rounded-full bg-border" })] }), _jsx("p", { className: "mt-2 text-xs text-muted-foreground", children: "Historique d\u00E9taill\u00E9 disponible dans la fiche position." })] })] })] }), _jsxs("div", { className: "mt-4 flex flex-wrap gap-2", children: [_jsxs(Button, { variant: "outline", size: "sm", onClick: onView, children: [_jsx(Eye, { className: "size-4" }), "Voir le d\u00E9tail complet"] }), _jsxs(Button, { variant: "outline", size: "sm", disabled: !canEdit, onClick: onEdit, children: [_jsx(Pencil, { className: "size-4" }), "Modifier"] }), _jsxs(Button, { variant: "outline", size: "sm", disabled: !canDelete, onClick: onDelete, className: "text-destructive", children: [_jsx(Trash2, { className: "size-4" }), "Supprimer"] })] })] }));
+}

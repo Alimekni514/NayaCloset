@@ -1,0 +1,18 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import * as React from 'react';
+import { Command as CommandPrimitive } from 'cmdk';
+import { Check, Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
+const Command = React.forwardRef(({ className, ...props }, ref) => (_jsx(CommandPrimitive, { ref: ref, className: cn('flex h-full w-full flex-col overflow-hidden rounded-xl bg-popover text-popover-foreground', className), ...props })));
+Command.displayName = CommandPrimitive.displayName;
+const CommandInput = React.forwardRef(({ className, ...props }, ref) => (_jsxs("div", { className: "flex items-center border-b px-3", "cmdk-input-wrapper": "", children: [_jsx(Search, { className: "mr-2 size-4 shrink-0 opacity-50" }), _jsx(CommandPrimitive.Input, { ref: ref, className: cn('flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50', className), ...props })] })));
+CommandInput.displayName = CommandPrimitive.Input.displayName;
+const CommandList = React.forwardRef(({ className, ...props }, ref) => (_jsx(CommandPrimitive.List, { ref: ref, className: cn('max-h-64 overflow-y-auto overflow-x-hidden p-1', className), ...props })));
+CommandList.displayName = CommandPrimitive.List.displayName;
+const CommandEmpty = React.forwardRef(({ className, ...props }, ref) => (_jsx(CommandPrimitive.Empty, { ref: ref, className: cn('py-6 text-center text-sm', className), ...props })));
+CommandEmpty.displayName = CommandPrimitive.Empty.displayName;
+const CommandGroup = React.forwardRef(({ className, ...props }, ref) => (_jsx(CommandPrimitive.Group, { ref: ref, className: cn('overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground', className), ...props })));
+CommandGroup.displayName = CommandPrimitive.Group.displayName;
+const CommandItem = React.forwardRef(({ className, children, selected, ...props }, ref) => (_jsxs(CommandPrimitive.Item, { ref: ref, className: cn('relative flex cursor-default select-none items-center rounded-lg px-2 py-2 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50', className), ...props, children: [_jsx(Check, { className: cn('mr-2 size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0') }), children] })));
+CommandItem.displayName = CommandPrimitive.Item.displayName;
+export { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem };

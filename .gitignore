@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+coverage/
+
+# Environment files – NEVER commit secrets
+.env
+.env.local
+.env.*.local
+
+# TypeScript build info
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+.logs/
+api-dev.log
+api-dev-direct.log
+
+# Uploads
+apps/api/uploads/
+
+# Temporary / debug files generated during development
+apps/api/tmp-*.html
+apps/api/*.png
+apps/api/pdf-iframe-test.png
+
+# Debug/scratch scripts at project root (not source code)
+debug.ts
+debug-*.ts
+debug-map.ts
+debug-mock.ts
+debug-service.ts
+test-express.ts
+seed_admin.ts
+download-mongo.js
+
+# Lovable source export
+lovable-source/
+
+# Playwright
+test-results/
+playwright-report/

@@ -1,0 +1,26 @@
+export const ORDER_STATUSES = [
+    'PENDING',
+    'APPROVING',
+    'APPROVED',
+    'ABM_CREATED',
+    'ABM_FAILED',
+    'VALIDATED',
+    'REJECTED',
+    'ABM_PROCESSING',
+    'SHIPMENT_CREATED',
+    'ABM_ERROR',
+    'CANCELLED',
+];
+export const ORDER_STATUS_LABEL = {
+    PENDING: 'En attente',
+    APPROVING: 'Traitement ABM',
+    APPROVED: 'Approuvee',
+    ABM_CREATED: 'Expedition creee',
+    ABM_FAILED: 'Erreur ABM',
+    VALIDATED: 'Validee',
+    REJECTED: 'Rejetee',
+    ABM_PROCESSING: 'Traitement ABM',
+    SHIPMENT_CREATED: 'Expedition creee',
+    ABM_ERROR: 'Erreur ABM',
+    CANCELLED: 'Annulee',
+};

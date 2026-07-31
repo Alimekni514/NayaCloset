@@ -1,0 +1,5 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { Minus, Plus } from "lucide-react";
+export function QuantitySelector({ value, onChange, max = 99, label = "Quantité", }) {
+    return (_jsxs("div", { className: "inline-flex items-center rounded-full border border-border bg-card", role: "group", "aria-label": label, children: [_jsx("button", { type: "button", "aria-label": "Diminuer la quantit\u00E9", onClick: () => onChange(Math.max(1, value - 1)), disabled: value <= 1, className: "grid size-10 place-items-center rounded-full text-foreground transition-colors hover:bg-muted disabled:opacity-40", children: _jsx(Minus, { className: "size-4" }) }), _jsx("span", { className: "w-10 text-center text-sm font-semibold tabular-nums", "aria-live": "polite", children: value }), _jsx("button", { type: "button", "aria-label": "Augmenter la quantit\u00E9", onClick: () => onChange(Math.min(max, value + 1)), disabled: value >= max, className: "grid size-10 place-items-center rounded-full text-foreground transition-colors hover:bg-muted disabled:opacity-40", children: _jsx(Plus, { className: "size-4" }) })] }));
+}

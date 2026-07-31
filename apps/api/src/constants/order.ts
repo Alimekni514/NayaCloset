@@ -1,0 +1,1 @@
+export const VALIDATABLE_ORDER_STATUSES = new Set(['PENDING', 'REJECTED']);
