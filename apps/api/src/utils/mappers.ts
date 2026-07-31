@@ -19,6 +19,16 @@ export const toProductDto = (product: any): ProductDto => ({
   isActive: product.isActive,
   createdAt: product.createdAt.toISOString(),
   updatedAt: product.updatedAt.toISOString(),
+  ...(product.category ? { category: product.category } : {}),
+  ...(product.deliveryFeeCents != null ? { deliveryFeeCents: product.deliveryFeeCents } : {}),
+  ...(product.colorVariants?.length
+    ? {
+        colorVariants: product.colorVariants.map((v: any) => ({
+          color: v.color,
+          imageUrl: v.imageUrl,
+        })),
+      }
+    : {}),
 });
 
 export const toOrderDto = (order: any): OrderDto => ({

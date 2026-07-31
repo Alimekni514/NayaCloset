@@ -1,5 +1,6 @@
 import placeholderProductImage from '@/assets/p-casque.jpg';
 import { apiClient } from '@/lib/api-client';
+import { resolveProductImageUrl } from './product-assets';
 import * as db from './mock-data';
 const LATENCY = 220;
 function delay(value, ms = LATENCY) {
@@ -11,19 +12,32 @@ const storefrontCategory = {
     name: 'Catalogue',
     description: 'Tous les produits disponibles pour la livraison.',
 };
-const mapApiProduct = (product) => ({
-    id: product.id,
-    slug: product.slug,
-    name: product.name,
-    description: product.description,
-    price: product.priceCents / 100,
-    categoryId: storefrontCategory.id,
-    stock: product.inventory,
-    images: [placeholderProductImage],
-    rating: 4.5,
-    featured: true,
-    createdAt: product.createdAt,
-});
+const mapApiProduct = (product) => {
+    const resolvedVariants = product.colorVariants?.map((v) => ({
+        color: v.color,
+        imageUrl: resolveProductImageUrl(v.imageUrl),
+    }));
+    // Use first variant image, otherwise fall back to placeholder
+    const primaryImage = resolvedVariants && resolvedVariants.length > 0
+        ? (resolvedVariants[0]?.imageUrl ?? placeholderProductImage)
+        : placeholderProductImage;
+    return {
+        id: product.id,
+        slug: product.slug,
+        name: product.name,
+        description: product.description,
+        price: product.priceCents / 100,
+        categoryId: storefrontCategory.id,
+        ...(product.category ? { category: product.category } : {}),
+        stock: product.inventory,
+        images: [primaryImage],
+        ...(resolvedVariants ? { colorVariants: resolvedVariants } : {}),
+        ...(product.deliveryFeeCents != null ? { deliveryFee: product.deliveryFeeCents / 100 } : {}),
+        rating: 4.5,
+        featured: true,
+        createdAt: product.createdAt,
+    };
+};
 export const catalogService = {
     listCategories: () => delay([storefrontCategory]),
     listProducts: async (query = {}) => {

@@ -37,6 +37,11 @@ export interface Category {
   description: string;
 }
 
+export interface ColorVariant {
+  color: string;
+  imageUrl: string;
+}
+
 export interface Product {
   id: string;
   slug: string;
@@ -44,13 +49,17 @@ export interface Product {
   description: string;
   price: number;
   compareAtPrice?: number;
+  deliveryFee?: number;
   categoryId: string;
+  category?: string;
   stock: number;
   images: string[];
+  colorVariants?: ColorVariant[];
   rating: number;
   featured: boolean;
   createdAt: string;
 }
+
 
 export interface CartLine {
   productId: string;
