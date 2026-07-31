@@ -42,10 +42,10 @@ function parseSafeHtml(html: string): Document {
  */
 function mountRenderContainer(doc: Document): HTMLElement {
   const container = document.createElement('div');
-  container.style.position = 'fixed';
-  container.style.left = '-100000px';
+  container.style.position = 'absolute';
+  container.style.left = '0';
   container.style.top = '0';
-  container.style.visibility = 'visible';
+  container.style.zIndex = '-9999';
   container.style.pointerEvents = 'none';
   container.style.background = '#fff';
 
