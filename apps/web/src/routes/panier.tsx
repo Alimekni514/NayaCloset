@@ -5,6 +5,7 @@ import { EmptyState, LoadingSkeleton } from '@/components/common/states';
 import { StoreLayout } from '@/components/store/StoreLayout';
 import { QuantitySelector } from '@/components/store/QuantitySelector';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useCartDetails } from '@/features/store/use-cart-details';
 import { useStore } from '@/features/store/store-context';
@@ -43,11 +44,11 @@ function CartPage() {
         ) : (
           <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
             <ul className="space-y-4">
-              {lines.map(({ product, quantity }) => (
-                <li key={product.id} className="surface-card flex flex-col gap-4 p-4 sm:flex-row">
+              {lines.map((line) => (
+                <li key={line.key} className="surface-card flex flex-col gap-4 p-4 sm:flex-row">
                   <img
-                    src={product.images[0]}
-                    alt={product.name}
+                    src={line.imageUrl}
+                    alt={line.name}
                     loading="lazy"
                     width={900}
                     height={900}
@@ -55,31 +56,39 @@ function CartPage() {
                   />
                   <div className="flex min-w-0 flex-1 flex-col gap-3">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
+                      <div className="min-w-0 space-y-1">
                         <Link
                           to="/produits/$productId"
-                          params={{ productId: product.slug }}
+                          params={{ productId: line.productId }}
                           className="truncate font-semibold"
                         >
-                          {product.name}
+                          {line.name}
                         </Link>
-                        <p className="text-sm text-muted-foreground">{formatTND(product.price)} / unite</p>
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                          {line.selectedColor && <span>Couleur : {line.selectedColor}</span>}
+                          {line.selectedSize && (
+                            <Badge variant="secondary" className="text-xs">
+                              {line.selectedSize}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{formatTND(line.unitPrice)} / unité</p>
                       </div>
                       <p className="shrink-0 font-display text-lg font-semibold">
-                        {formatTND(product.price * quantity)}
+                        {formatTND(line.unitPrice * line.quantity)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <QuantitySelector
-                        value={quantity}
-                        max={Math.max(1, product.stock)}
-                        onChange={(value) => setQuantity(product.id, value)}
+                        value={line.quantity}
+                        max={Math.max(1, line.stock)}
+                        onChange={(value) => setQuantity(line.key, value)}
                       />
                       <Button
                         variant="ghost"
                         size="icon"
-                        aria-label={`Retirer ${product.name}`}
-                        onClick={() => removeFromCart(product.id)}
+                        aria-label={`Retirer ${line.name}`}
+                        onClick={() => removeFromCart(line.key)}
                       >
                         <Trash2 className="size-4" />
                       </Button>
@@ -95,7 +104,7 @@ function CartPage() {
             </ul>
 
             <aside className="surface-card h-fit space-y-4 p-6 lg:sticky lg:top-28">
-              <h2 className="font-display text-xl font-semibold">Recapitulatif</h2>
+              <h2 className="font-display text-xl font-semibold">Récapitulatif</h2>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Sous-total</span>

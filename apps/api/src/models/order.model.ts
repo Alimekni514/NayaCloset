@@ -59,6 +59,8 @@ const orderSchema = new Schema(
         quantity: { type: Number, required: true, min: 1 },
         unitPriceMillimes: { type: Number, required: true, min: 0 },
         lineTotalMillimes: { type: Number, required: true, min: 0 },
+        selectedColor: { type: String, trim: true },
+        selectedSize: { type: String, trim: true },
       },
     ],
     contentSummary: { type: String, required: true, trim: true, maxlength: 255 },

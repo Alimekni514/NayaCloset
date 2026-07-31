@@ -8,7 +8,7 @@ export type CheckoutLocationOption = {
 };
 
 export type GuestOrderPayload = {
-  items: Array<{ productId: string; quantity: number }>;
+  items: Array<{ productId: string; quantity: number; selectedColor?: string; selectedSize?: string }>;
   delivery: GuestCheckoutValues;
   idempotencyKey: string;
 };

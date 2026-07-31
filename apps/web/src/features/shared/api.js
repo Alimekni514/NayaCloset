@@ -16,6 +16,7 @@ const mapApiProduct = (product) => {
     const resolvedVariants = product.colorVariants?.map((v) => ({
         color: v.color,
         imageUrl: resolveProductImageUrl(v.imageUrl),
+        ...(v.availableSizes ? { availableSizes: v.availableSizes } : {}),
     }));
     // Use first variant image, otherwise fall back to placeholder
     const primaryImage = resolvedVariants && resolvedVariants.length > 0
@@ -32,6 +33,7 @@ const mapApiProduct = (product) => {
         stock: product.inventory,
         images: [primaryImage],
         ...(resolvedVariants ? { colorVariants: resolvedVariants } : {}),
+        ...(product.sizes && product.sizes.length > 0 ? { sizes: product.sizes } : {}),
         ...(product.deliveryFeeCents != null ? { deliveryFee: product.deliveryFeeCents / 100 } : {}),
         rating: 4.5,
         featured: true,

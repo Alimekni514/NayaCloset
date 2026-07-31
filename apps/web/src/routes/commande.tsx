@@ -71,7 +71,13 @@ function CheckoutPage() {
   }, [postalCodeQuery.data, form]);
 
   const normalizedItems = useMemo(
-    () => lines.map(({ product, quantity }) => ({ productId: product.id, quantity })),
+    () =>
+      lines.map((line) => ({
+        productId: line.productId,
+        quantity: line.quantity,
+        ...(line.selectedColor ? { selectedColor: line.selectedColor } : {}),
+        ...(line.selectedSize ? { selectedSize: line.selectedSize } : {}),
+      })),
     [lines],
   );
 
@@ -385,14 +391,20 @@ function CheckoutPage() {
         <aside className="surface-card h-fit space-y-4 p-6 lg:sticky lg:top-28">
           <h2 className="font-display text-xl font-semibold">Votre commande</h2>
           <ul className="space-y-3">
-            {lines.map(({ product, quantity }) => (
-              <li key={product.id} className="flex items-center gap-3">
-                <img src={product.images[0]} alt="" className="size-14 rounded-2xl object-cover" />
+            {lines.map((line) => (
+              <li key={line.key} className="flex items-center gap-3">
+                <img src={line.imageUrl} alt="" className="size-14 rounded-2xl object-cover" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{product.name}</p>
-                  <p className="text-xs text-muted-foreground">Quantite : {quantity}</p>
+                  <p className="truncate text-sm font-medium">{line.name}</p>
+                  <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                    {line.selectedColor && <span>{line.selectedColor}</span>}
+                    {line.selectedSize && (
+                      <span className="rounded bg-secondary px-1 font-medium">{line.selectedSize}</span>
+                    )}
+                    <span>× {line.quantity}</span>
+                  </div>
                 </div>
-                <p className="text-sm font-semibold">{formatTND(product.price * quantity)}</p>
+                <p className="text-sm font-semibold">{formatTND(line.unitPrice * line.quantity)}</p>
               </li>
             ))}
           </ul>

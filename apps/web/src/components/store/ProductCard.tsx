@@ -68,7 +68,7 @@ export function ProductCard({ product }: { product: Product }) {
             size="sm"
             disabled={outOfStock}
             onClick={() => {
-              addToCart(product.id);
+              addToCart({ productId: product.id, quantity: 1, name: product.name, ...(product.images[0] ? { imageUrl: product.images[0] } : {}), unitPrice: product.price });
               toast.success("Ajouté au panier", { description: product.name });
             }}
           >

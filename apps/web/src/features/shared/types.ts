@@ -40,6 +40,7 @@ export interface Category {
 export interface ColorVariant {
   color: string;
   imageUrl: string;
+  availableSizes?: string[];
 }
 
 export interface Product {
@@ -55,6 +56,7 @@ export interface Product {
   stock: number;
   images: string[];
   colorVariants?: ColorVariant[];
+  sizes?: string[];
   rating: number;
   featured: boolean;
   createdAt: string;
@@ -64,6 +66,14 @@ export interface Product {
 export interface CartLine {
   productId: string;
   quantity: number;
+  selectedColor?: string;
+  selectedSize?: string;
+  /** Resolved asset URL for the chosen variant image */
+  imageUrl?: string;
+  /** Cached product name for display without re-fetching */
+  name?: string;
+  /** Unit price in TND for display and totals */
+  unitPrice?: number;
 }
 
 export interface Customer {
@@ -98,6 +108,8 @@ export interface OrderItem {
   image: string;
   unitPrice: number;
   quantity: number;
+  selectedColor?: string;
+  selectedSize?: string;
 }
 
 export interface OrderEvent {

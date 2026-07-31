@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const colorVariantSchema = z.object({
   color: z.string(),
   imageUrl: z.string(),
+  availableSizes: z.array(z.string()).optional(),
 });
 
 export const productSchema = z.object({
@@ -19,6 +20,7 @@ export const productSchema = z.object({
   category: z.string().optional(),
   deliveryFeeCents: z.number().int().nonnegative().optional(),
   colorVariants: z.array(colorVariantSchema).optional(),
+  sizes: z.array(z.string()).optional(),
 });
 
 export const productsQuerySchema = z.object({

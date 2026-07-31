@@ -5,6 +5,7 @@ const colorVariantSchema = new Schema(
   {
     color: { type: String, required: true, trim: true },
     imageUrl: { type: String, required: true, trim: true },
+    availableSizes: [{ type: String, trim: true }],
   },
   { _id: false },
 );
@@ -22,6 +23,7 @@ const productSchema = new Schema(
     category: { type: String, trim: true },
     deliveryFeeCents: { type: Number, min: 0 },
     colorVariants: { type: [colorVariantSchema], default: undefined },
+    sizes: [{ type: String, trim: true }],
   },
   { timestamps: true, versionKey: false },
 );

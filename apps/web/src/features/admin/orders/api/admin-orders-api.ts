@@ -61,6 +61,8 @@ export type AdminOrderDetail = {
       unitPriceMillimes: number;
       quantity: number;
       lineTotalMillimes: number;
+      selectedColor?: string;
+      selectedSize?: string;
     }>;
     contentSummary: string;
     subtotalMillimes: number;

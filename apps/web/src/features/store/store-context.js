@@ -3,6 +3,11 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 const CART_KEY = 'darsouk.cart';
 const FAV_KEY = 'darsouk.favorites';
 const mongoIdPattern = /^[a-fA-F0-9]{24}$/;
+/**
+ * Composite identity key for a cart line.
+ * Changing color or size creates a separate line.
+ */
+export const cartLineKey = (line) => `${line.productId}|${line.selectedColor ?? ''}|${line.selectedSize ?? ''}`;
 function read(key, fallback) {
     if (typeof window === 'undefined') {
         return fallback;
@@ -16,7 +21,9 @@ function read(key, fallback) {
     }
 }
 function sanitizeCart(lines) {
-    return lines.filter((line) => mongoIdPattern.test(line.productId) && Number.isInteger(line.quantity) && line.quantity > 0);
+    return lines.filter((line) => mongoIdPattern.test(line.productId) &&
+        Number.isInteger(line.quantity) &&
+        line.quantity > 0);
 }
 const StoreContext = createContext(null);
 export function StoreProvider({ children }) {
@@ -32,32 +39,49 @@ export function StoreProvider({ children }) {
             window.localStorage.setItem(key, JSON.stringify(value));
         }
     }, []);
-    const addToCart = useCallback((productId, quantity = 1) => {
+    const addToCart = useCallback((payload) => {
+        const { productId, quantity = 1, selectedColor, selectedSize, imageUrl, name, unitPrice } = payload;
         setCart((prev) => {
-            const existing = prev.find((line) => line.productId === productId);
+            const key = cartLineKey({
+                productId,
+                ...(selectedColor ? { selectedColor } : {}),
+                ...(selectedSize ? { selectedSize } : {}),
+            });
+            const existing = prev.find((line) => cartLineKey(line) === key);
             const next = existing
-                ? prev.map((line) => line.productId === productId
+                ? prev.map((line) => cartLineKey(line) === key
                     ? { ...line, quantity: line.quantity + quantity }
                     : line)
-                : [...prev, { productId, quantity }];
+                : [
+                    ...prev,
+                    {
+                        productId,
+                        quantity,
+                        ...(selectedColor ? { selectedColor } : {}),
+                        ...(selectedSize ? { selectedSize } : {}),
+                        ...(imageUrl ? { imageUrl } : {}),
+                        ...(name ? { name } : {}),
+                        ...(unitPrice != null ? { unitPrice } : {}),
+                    },
+                ];
             const sanitized = sanitizeCart(next);
             persist(CART_KEY, sanitized);
             return sanitized;
         });
     }, [persist]);
-    const setQuantity = useCallback((productId, quantity) => {
+    const setQuantity = useCallback((lineKey, quantity) => {
         setCart((prev) => {
             const next = quantity <= 0
-                ? prev.filter((line) => line.productId !== productId)
-                : prev.map((line) => (line.productId === productId ? { ...line, quantity } : line));
+                ? prev.filter((line) => cartLineKey(line) !== lineKey)
+                : prev.map((line) => (cartLineKey(line) === lineKey ? { ...line, quantity } : line));
             const sanitized = sanitizeCart(next);
             persist(CART_KEY, sanitized);
             return sanitized;
         });
     }, [persist]);
-    const removeFromCart = useCallback((productId) => {
+    const removeFromCart = useCallback((lineKey) => {
         setCart((prev) => {
-            const next = prev.filter((line) => line.productId !== productId);
+            const next = prev.filter((line) => cartLineKey(line) !== lineKey);
             persist(CART_KEY, next);
             return next;
         });

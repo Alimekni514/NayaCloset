@@ -23,6 +23,8 @@ export const buildOrderContentSummary = (productNames: string[]): string => {
 export const createPricedOrderItem = ({
   product,
   quantity,
+  selectedColor,
+  selectedSize,
 }: {
   product: {
     _id: unknown;
@@ -31,6 +33,8 @@ export const createPricedOrderItem = ({
     images?: string[];
   };
   quantity: number;
+  selectedColor?: string;
+  selectedSize?: string;
 }) => {
   const unitPriceMillimes = centsToMillimes(product.priceCents);
   const lineTotalMillimes = unitPriceMillimes * quantity;
@@ -42,6 +46,8 @@ export const createPricedOrderItem = ({
     unitPriceMillimes,
     quantity,
     lineTotalMillimes,
+    ...(selectedColor ? { selectedColor } : {}),
+    ...(selectedSize ? { selectedSize } : {}),
   };
 };
 

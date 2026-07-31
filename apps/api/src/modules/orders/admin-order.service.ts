@@ -125,6 +125,8 @@ export const getAdminOrderDetail = async (orderId: string) => {
         unitPriceMillimes: item.unitPriceMillimes,
         quantity: item.quantity,
         lineTotalMillimes: item.lineTotalMillimes,
+        ...(item.selectedColor ? { selectedColor: item.selectedColor } : {}),
+        ...(item.selectedSize ? { selectedSize: item.selectedSize } : {}),
       })),
       contentSummary: order.contentSummary,
       subtotalMillimes: order.subtotalMillimes,

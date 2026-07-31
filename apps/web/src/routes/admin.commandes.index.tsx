@@ -181,13 +181,24 @@ function AdminOrdersPage() {
               <section className="space-y-2">
                 <h3 className="font-semibold">Articles</h3>
                 <ul className="space-y-2">
-                  {detailQuery.data.order.items.map((item) => (
-                    <li key={item.productId} className="flex justify-between gap-3 rounded-2xl border p-3">
-                      <span>{item.productName} x {item.quantity}</span>
+                  {detailQuery.data.order.items.map((item, index) => (
+                    <li key={`${item.productId}-${index}`} className="flex justify-between gap-3 rounded-2xl border p-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{item.productName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.selectedColor && <span>Couleur : {item.selectedColor} </span>}
+                          {item.selectedSize && <span>· Taille : {item.selectedSize} </span>}
+                          · x{item.quantity}
+                        </p>
+                      </div>
                       <span>{formatMillimesTnd(item.lineTotalMillimes)}</span>
                     </li>
                   ))}
                 </ul>
+              </section>
+              <section className="space-y-1 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ABM TAGS (prévisualisation)</h3>
+                <p className="break-all font-mono text-sm">{detailQuery.data.order.abmPreview.parcel.TAGS || '—'}</p>
               </section>
               <section className="grid gap-4 sm:grid-cols-2">
                 <PreviewBlock title="Step 1: Naya pickup" values={detailQuery.data.order.abmPreview.pickup} />

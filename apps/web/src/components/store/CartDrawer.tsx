@@ -9,6 +9,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { QuantitySelector } from "./QuantitySelector";
 import { EmptyState, LoadingSkeleton } from "@/components/common/states";
@@ -46,30 +47,36 @@ export function CartDrawer() {
             />
           ) : (
             <ul className="space-y-4 py-2">
-              {lines.map(({ product, quantity }) => (
-                <li key={product.id} className="flex gap-3">
+              {lines.map((line) => (
+                <li key={line.key} className="flex gap-3">
                   <img
-                    src={product.images[0]}
-                    alt={product.name}
+                    src={line.imageUrl}
+                    alt={line.name}
                     loading="lazy"
                     width={900}
                     height={900}
                     className="size-20 shrink-0 rounded-xl object-cover"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{product.name}</p>
-                    <p className="text-sm text-muted-foreground">{formatTND(product.price)}</p>
+                    <p className="truncate text-sm font-semibold">{line.name}</p>
+                    <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                      {line.selectedColor && <span>{line.selectedColor}</span>}
+                      {line.selectedSize && (
+                        <Badge variant="secondary" className="text-xs">{line.selectedSize}</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{formatTND(line.unitPrice)}</p>
                     <div className="mt-2 flex items-center gap-2">
                       <QuantitySelector
-                        value={quantity}
-                        max={Math.max(1, product.stock)}
-                        onChange={(value) => setQuantity(product.id, value)}
+                        value={line.quantity}
+                        max={Math.max(1, line.stock)}
+                        onChange={(value) => setQuantity(line.key, value)}
                       />
                       <Button
                         variant="ghost"
                         size="icon"
-                        aria-label={`Retirer ${product.name}`}
-                        onClick={() => removeFromCart(product.id)}
+                        aria-label={`Retirer ${line.name}`}
+                        onClick={() => removeFromCart(line.key)}
                       >
                         <Trash2 className="size-4" />
                       </Button>

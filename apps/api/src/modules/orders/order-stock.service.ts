@@ -7,15 +7,22 @@ import { ProductModel } from '../../models/product.model';
 import { ORDER_MAX_TOTAL_QUANTITY } from './order.constants';
 
 export const normalizeOrderLines = (
-  items: Array<{ productId: string; quantity: number }>,
-): Array<{ productId: string; quantity: number }> => {
-  const merged = new Map<string, number>();
+  items: Array<{ productId: string; quantity: number; selectedColor?: string; selectedSize?: string }>,
+): Array<{ productId: string; quantity: number; selectedColor?: string; selectedSize?: string }> => {
+  // Merge identity = productId + selectedColor + selectedSize (all optional)
+  const merged = new Map<string, { productId: string; quantity: number; selectedColor?: string; selectedSize?: string }>();
 
   for (const item of items) {
-    merged.set(item.productId, (merged.get(item.productId) ?? 0) + item.quantity);
+    const key = `${item.productId}|${item.selectedColor ?? ''}|${item.selectedSize ?? ''}`;
+    const existing = merged.get(key);
+    if (existing) {
+      existing.quantity += item.quantity;
+    } else {
+      merged.set(key, { ...item });
+    }
   }
 
-  const normalized = [...merged.entries()].map(([productId, quantity]) => ({ productId, quantity }));
+  const normalized = [...merged.values()];
   const totalQuantity = normalized.reduce((sum, item) => sum + item.quantity, 0);
 
   if (totalQuantity > ORDER_MAX_TOTAL_QUANTITY) {

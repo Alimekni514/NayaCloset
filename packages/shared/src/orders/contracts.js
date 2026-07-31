@@ -46,6 +46,8 @@ const optionalAddressLineSchema = z
 export const guestOrderItemInputSchema = z.object({
     productId: z.string().trim().regex(/^[a-fA-F0-9]{24}$/u, 'Produit invalide'),
     quantity: z.number().int().min(1).max(20),
+    selectedColor: z.string().trim().max(60).optional(),
+    selectedSize: z.string().trim().max(10).optional(),
 });
 export const guestOrderDeliveryInputSchema = z.object({
     contactLastName: personNameSchema,
@@ -159,6 +161,8 @@ export const adminOrderDetailSchema = z.object({
             unitPriceMillimes: orderMoneySchema,
             quantity: z.number().int().positive(),
             lineTotalMillimes: orderMoneySchema,
+            selectedColor: z.string().optional(),
+            selectedSize: z.string().optional(),
         })),
         contentSummary: z.string(),
         subtotalMillimes: orderMoneySchema,

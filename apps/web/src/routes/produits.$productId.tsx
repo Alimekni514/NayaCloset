@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Heart, ShieldCheck, ShoppingBag, Star, Truck } from "lucide-react";
+import { Heart, Minus, Plus, ShieldCheck, ShoppingBag, Star, Trash2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { StoreLayout } from "@/components/store/StoreLayout";
-import { QuantitySelector } from "@/components/store/QuantitySelector";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ErrorState, LoadingSkeleton } from "@/components/common/states";
 import { useProduct } from "@/features/shared/queries";
@@ -18,43 +18,113 @@ export const Route = createFileRoute("/produits/$productId")({
     meta: [
       { title: "Fiche produit — Dar Souk" },
       { name: "description", content: "Détails, prix en TND, stock et livraison du produit sélectionné." },
-      { property: "og:title", content: "Fiche produit — Dar Souk" },
-      { property: "og:description", content: "Galerie, description, disponibilité et ajout au panier." },
     ],
   }),
   component: ProductPage,
 });
 
+type VariantLine = {
+  color: string;
+  colorImageUrl: string;
+  size: string;
+  quantity: number;
+};
+
 function ProductPage() {
   const { productId } = Route.useParams();
   const { data: product, isLoading, error, refetch } = useProduct(productId);
   const { addToCart, toggleFavorite, isFavorite, setCartOpen } = useStore();
-  const [quantity, setQuantity] = useState(1);
-  const [activeImage, setActiveImage] = useState(0);
+
+  // Current selector state
   const [activeColor, setActiveColor] = useState<string | null>(null);
+  const [activeSize, setActiveSize] = useState<string | null>(null);
+  const [selectorQty, setSelectorQty] = useState(1);
+  const [sizeError, setSizeError] = useState(false);
+
+  // Pending variant lines the user is building before committing to cart
+  const [pendingLines, setPendingLines] = useState<VariantLine[]>([]);
 
   const hasColorVariants = product?.colorVariants && product.colorVariants.length > 0;
+  const hasSizes = product?.sizes && product.sizes.length > 0;
 
-  // Resolve the displayed image: if a color is selected use that variant's image,
-  // otherwise use the thumbnail index from the plain images array.
+  // Resolve displayed image based on active color
   const displayedImage = (() => {
     if (!product) return undefined;
-    if (hasColorVariants && activeColor !== null) {
+    if (hasColorVariants && activeColor) {
       const variant = product.colorVariants!.find((v) => v.color === activeColor);
-      return variant?.imageUrl ?? product.images[activeImage];
+      return variant?.imageUrl ?? product.images[0];
     }
-    return product.images[activeImage];
+    return product.images[0];
   })();
 
   const handleColorSelect = (color: string, imageUrl: string) => {
     setActiveColor(color);
-    // Also update activeImage so the thumbnail strip (if shown) stays consistent
-    if (!hasColorVariants) return;
-    const idx = product!.colorVariants!.findIndex((v) => v.color === color);
-    if (idx !== -1) setActiveImage(idx);
-    // Prefetch the image so the swap is instant (browser caches it)
+    // Prefetch image for instant swap
     const img = new Image();
     img.src = imageUrl;
+  };
+
+  const handleAddVariant = () => {
+    if (!product) return;
+    if (hasSizes && !activeSize) {
+      setSizeError(true);
+      return;
+    }
+    setSizeError(false);
+
+    const colorImageUrl = activeColor
+      ? (product.colorVariants?.find((v) => v.color === activeColor)?.imageUrl ?? product.images[0] ?? '')
+      : (product.images[0] ?? '');
+    const colorLabel = activeColor ?? '';
+    const sizeLabel = activeSize ?? '';
+
+    setPendingLines((prev) => {
+      const existing = prev.find((l) => l.color === colorLabel && l.size === sizeLabel);
+      if (existing) {
+        return prev.map((l) =>
+          l.color === colorLabel && l.size === sizeLabel
+            ? { ...l, quantity: l.quantity + selectorQty }
+            : l,
+        );
+      }
+      return [...prev, { color: colorLabel, colorImageUrl, size: sizeLabel, quantity: selectorQty }];
+    });
+
+    // Reset quantity after adding
+    setSelectorQty(1);
+  };
+
+  const handleCommitToCart = () => {
+    if (!product) return;
+    if (pendingLines.length === 0) {
+      // No pending lines — direct add (products without variants)
+      addToCart({
+        productId: product.id,
+        quantity: selectorQty,
+        name: product.name,
+        ...(product.images[0] ? { imageUrl: product.images[0] } : {}),
+        unitPrice: product.price,
+      });
+      setCartOpen(true);
+      toast.success("Ajouté au panier", { description: product.name });
+      return;
+    }
+
+    for (const line of pendingLines) {
+      addToCart({
+        productId: product.id,
+        quantity: line.quantity,
+        ...(line.color ? { selectedColor: line.color } : {}),
+        ...(line.size ? { selectedSize: line.size } : {}),
+        ...(line.colorImageUrl ? { imageUrl: line.colorImageUrl } : {}),
+        name: product.name,
+        unitPrice: product.price,
+      });
+    }
+    setPendingLines([]);
+    setCartOpen(true);
+    const totalQty = pendingLines.reduce((s, l) => s + l.quantity, 0);
+    toast.success(`${totalQty} article(s) ajouté(s) au panier`, { description: product.name });
   };
 
   return (
@@ -75,7 +145,7 @@ function ProductPage() {
             </nav>
 
             <div className="mt-6 grid gap-10 lg:grid-cols-2">
-              {/* ── Image gallery ── */}
+              {/* ── Image ── */}
               <div className="space-y-4">
                 <div className="overflow-hidden rounded-3xl bg-secondary">
                   <img
@@ -88,66 +158,44 @@ function ProductPage() {
                   />
                 </div>
 
-                {/* Color swatches — shown when product has colorVariants */}
-                {hasColorVariants ? (
-                  <div className="flex flex-wrap gap-3" role="group" aria-label="Choisir une couleur">
-                    {product.colorVariants!.map((variant) => {
-                      const swatchColor = COLOR_SWATCH_CSS[variant.color] ?? '#888888';
-                      const isSelected = activeColor === variant.color || (activeColor === null && variant === product.colorVariants![0]);
-                      return (
-                        <button
-                          key={variant.color}
-                          type="button"
-                          onClick={() => handleColorSelect(variant.color, variant.imageUrl)}
-                          aria-label={variant.color}
-                          aria-pressed={isSelected}
-                          title={variant.color}
-                          className={cn(
-                            "relative size-10 rounded-full border-2 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                            isSelected
-                              ? "border-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.2)] scale-110"
-                              : "border-border hover:border-primary/60 hover:scale-105",
-                            variant.color === "White" && "border-border/60",
-                          )}
-                          style={{ backgroundColor: swatchColor }}
-                        >
-                          {/* Inner ring for white swatch visibility */}
-                          {variant.color === "White" && (
-                            <span className="absolute inset-[3px] rounded-full border border-border/30" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  /* Thumbnail strip for products without color variants */
-                  <div className="flex gap-3">
-                    {product.images.map((image, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => setActiveImage(index)}
-                        aria-label={`Image ${index + 1}`}
-                        aria-current={activeImage === index}
-                        className={cn(
-                          "size-20 overflow-hidden rounded-2xl border-2 transition-colors",
-                          activeImage === index ? "border-primary" : "border-transparent",
-                        )}
-                      >
-                        <img src={image} alt="" loading="lazy" className="size-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Active color label */}
+                {/* Color swatches */}
                 {hasColorVariants && (
-                  <p className="text-sm text-muted-foreground">
-                    Couleur :{" "}
-                    <span className="font-medium text-foreground">
-                      {activeColor ?? product.colorVariants?.[0]?.color}
-                    </span>
-                  </p>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Couleur :{" "}
+                      <span className="font-medium text-foreground">
+                        {activeColor ?? product.colorVariants![0]?.color}
+                      </span>
+                    </p>
+                    <div className="flex flex-wrap gap-3" role="group" aria-label="Choisir une couleur">
+                      {product.colorVariants!.map((variant) => {
+                        const swatchColor = COLOR_SWATCH_CSS[variant.color] ?? '#888888';
+                        const isSelected = activeColor === variant.color || (activeColor === null && variant === product.colorVariants![0]);
+                        return (
+                          <button
+                            key={variant.color}
+                            type="button"
+                            onClick={() => handleColorSelect(variant.color, variant.imageUrl)}
+                            aria-label={variant.color}
+                            aria-pressed={isSelected}
+                            title={variant.color}
+                            className={cn(
+                              "relative size-10 rounded-full border-2 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                              isSelected
+                                ? "scale-110 border-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.2)]"
+                                : "border-border hover:scale-105 hover:border-primary/60",
+                              variant.color === "White" && "border-border/60",
+                            )}
+                            style={{ backgroundColor: swatchColor }}
+                          >
+                            {variant.color === "White" && (
+                              <span className="absolute inset-[3px] rounded-full border border-border/30" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -190,36 +238,95 @@ function ProductPage() {
                   )}
                 </p>
 
-                {/* Description — supports Arabic RTL via dir=auto */}
-                <p
-                  className="mt-6 leading-relaxed text-muted-foreground"
-                  dir="auto"
-                  lang="ar"
-                >
+                {/* Description */}
+                <p className="mt-6 leading-relaxed text-muted-foreground" dir="auto">
                   {product.description}
                 </p>
 
                 <Separator className="my-6" />
 
-                {/* Add to cart */}
-                <div className="flex flex-wrap items-center gap-3">
-                  <QuantitySelector
-                    value={quantity}
-                    max={Math.max(1, product.stock)}
-                    onChange={setQuantity}
-                  />
+                {/* ── Size selector ── */}
+                {hasSizes && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      Taille{" "}
+                      {activeSize && (
+                        <span className="ml-1 font-semibold text-foreground">{activeSize}</span>
+                      )}
+                    </p>
+                    <div className="flex flex-wrap gap-2" role="group" aria-label="Choisir une taille">
+                      {product.sizes!.map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => {
+                            setActiveSize(size);
+                            setSizeError(false);
+                          }}
+                          aria-pressed={activeSize === size}
+                          className={cn(
+                            "min-w-[2.75rem] rounded-xl border-2 px-3 py-2 text-sm font-semibold transition-all",
+                            activeSize === size
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border hover:border-primary/60 hover:bg-muted",
+                          )}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                    {sizeError && (
+                      <p className="text-xs text-destructive" role="alert">
+                        Veuillez choisir une taille.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Quantity + add variant ── */}
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  {/* Quantity control */}
+                  <div className="flex items-center rounded-xl border">
+                    <button
+                      type="button"
+                      onClick={() => setSelectorQty((q) => Math.max(1, q - 1))}
+                      className="flex size-10 items-center justify-center rounded-l-xl hover:bg-muted"
+                      aria-label="Diminuer la quantité"
+                    >
+                      <Minus className="size-4" />
+                    </button>
+                    <span className="w-10 text-center text-sm font-semibold">{selectorQty}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectorQty((q) => Math.min(20, q + 1))}
+                      className="flex size-10 items-center justify-center rounded-r-xl hover:bg-muted"
+                      aria-label="Augmenter la quantité"
+                    >
+                      <Plus className="size-4" />
+                    </button>
+                  </div>
+
+                  {/* Add variant button (shown when product has sizes) */}
+                  {hasSizes ? (
+                    <Button
+                      variant="outline"
+                      disabled={product.stock === 0}
+                      onClick={handleAddVariant}
+                    >
+                      <Plus className="size-4" />
+                      Ajouter cette variante
+                    </Button>
+                  ) : null}
+
                   <Button
                     size="lg"
-                    disabled={product.stock === 0}
-                    onClick={() => {
-                      addToCart(product.id, quantity);
-                      setCartOpen(true);
-                      toast.success("Ajouté au panier", { description: product.name });
-                    }}
+                    disabled={product.stock === 0 || (hasSizes && pendingLines.length === 0 && !activeSize)}
+                    onClick={handleCommitToCart}
                   >
                     <ShoppingBag className="size-4" />
-                    Ajouter au panier
+                    {pendingLines.length > 0 ? `Ajouter au panier (${pendingLines.reduce((s, l) => s + l.quantity, 0)})` : "Ajouter au panier"}
                   </Button>
+
                   <Button
                     size="lg"
                     variant="outline"
@@ -230,6 +337,91 @@ function ProductPage() {
                     Favori
                   </Button>
                 </div>
+
+                {/* ── Pending variant lines ── */}
+                {pendingLines.length > 0 && (
+                  <div className="mt-6 space-y-3">
+                    <p className="text-sm font-semibold">Variantes sélectionnées</p>
+                    <ul className="space-y-2">
+                      {pendingLines.map((line) => (
+                        <li
+                          key={`${line.color}|${line.size}`}
+                          className="flex items-center gap-3 rounded-2xl border p-3"
+                        >
+                          {/* Color swatch thumbnail */}
+                          {line.colorImageUrl ? (
+                            <img
+                              src={line.colorImageUrl}
+                              alt={line.color}
+                              className="size-10 shrink-0 rounded-xl object-cover"
+                            />
+                          ) : (
+                            <div
+                              className="size-10 shrink-0 rounded-xl border"
+                              style={{ backgroundColor: COLOR_SWATCH_CSS[line.color] ?? '#888' }}
+                            />
+                          )}
+                          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                            <div className="flex items-center gap-1.5 text-sm font-medium">
+                              {line.color && <span>{line.color}</span>}
+                              {line.color && line.size && <span className="text-muted-foreground">—</span>}
+                              {line.size && <Badge variant="secondary">{line.size}</Badge>}
+                            </div>
+                            <p className="text-xs text-muted-foreground">{formatTND(product.price)} / unité</p>
+                          </div>
+                          {/* Inline qty control */}
+                          <div className="flex items-center rounded-lg border text-sm">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPendingLines((prev) =>
+                                  prev.map((l) =>
+                                    l.color === line.color && l.size === line.size
+                                      ? { ...l, quantity: Math.max(1, l.quantity - 1) }
+                                      : l,
+                                  ),
+                                )
+                              }
+                              className="flex size-8 items-center justify-center hover:bg-muted"
+                              aria-label="Diminuer"
+                            >
+                              <Minus className="size-3" />
+                            </button>
+                            <span className="w-8 text-center font-semibold">{line.quantity}</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPendingLines((prev) =>
+                                  prev.map((l) =>
+                                    l.color === line.color && l.size === line.size
+                                      ? { ...l, quantity: Math.min(20, l.quantity + 1) }
+                                      : l,
+                                  ),
+                                )
+                              }
+                              className="flex size-8 items-center justify-center hover:bg-muted"
+                              aria-label="Augmenter"
+                            >
+                              <Plus className="size-3" />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPendingLines((prev) =>
+                                prev.filter((l) => !(l.color === line.color && l.size === line.size)),
+                              )
+                            }
+                            aria-label="Supprimer cette variante"
+                            className="ml-1 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 {/* Trust badges */}
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -243,9 +435,9 @@ function ProductPage() {
                   </div>
                 </div>
 
-                {/* Total breakdown if delivery fee set */}
+                {/* Total breakdown */}
                 {product.deliveryFee != null && (
-                  <div className="mt-4 surface-card p-4 space-y-2 text-sm">
+                  <div className="mt-4 surface-card space-y-2 p-4 text-sm">
                     <div className="flex justify-between text-muted-foreground">
                       <span>Produit</span>
                       <span>{formatTND(product.price)}</span>

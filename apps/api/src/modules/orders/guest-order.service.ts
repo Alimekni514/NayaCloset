@@ -11,6 +11,13 @@ import { calculateOrderTotals, createPricedOrderItem, buildOrderContentSummary }
 import { generateUniqueOrderReference } from './order-reference.service';
 import { normalizeOrderLines, reserveStock } from './order-stock.service';
 
+type OrderItemInput = {
+  productId: string;
+  quantity: number;
+  selectedColor?: string;
+  selectedSize?: string;
+};
+
 export const createGuestOrder = async ({
   userId,
   idempotencyKey,
@@ -19,7 +26,7 @@ export const createGuestOrder = async ({
 }: {
   userId?: string;
   idempotencyKey?: string;
-  items: Array<{ productId: string; quantity: number }>;
+  items: OrderItemInput[];
   delivery: {
     contactLastName: string;
     contactFirstName?: string;
@@ -87,16 +94,50 @@ export const createGuestOrder = async ({
     });
   }
 
-  const productIds = normalizedItems.map((item) => new Types.ObjectId(item.productId));
-  const products = await ProductModel.find({ _id: { $in: productIds }, isActive: true }).lean();
+  // Fetch unique products (deduplicated by productId)
+  const uniqueProductIds = [...new Set(normalizedItems.map((item) => item.productId))].map(
+    (id) => new Types.ObjectId(id),
+  );
+  const products = await ProductModel.find({ _id: { $in: uniqueProductIds }, isActive: true }).lean();
 
-  if (products.length !== normalizedItems.length) {
+  if (products.length !== uniqueProductIds.length) {
     throw new HttpError(StatusCodes.BAD_REQUEST, 'Un ou plusieurs articles ne sont plus disponibles.', {
       code: 'OUT_OF_STOCK',
     });
   }
 
   const productMap = new Map(products.map((product) => [product._id.toString(), product]));
+
+  // Validate each line: color and size must match product definition
+  for (const item of normalizedItems) {
+    const product = productMap.get(item.productId) as any;
+
+    if (!product) {
+      throw new HttpError(StatusCodes.BAD_REQUEST, 'Un ou plusieurs articles ne sont plus disponibles.', {
+        code: 'OUT_OF_STOCK',
+      });
+    }
+
+    // Validate selectedColor if product has colorVariants
+    if (item.selectedColor && Array.isArray(product.colorVariants) && product.colorVariants.length > 0) {
+      const validColors = product.colorVariants.map((v: any) => v.color as string);
+      if (!validColors.includes(item.selectedColor)) {
+        throw new HttpError(StatusCodes.BAD_REQUEST, `La couleur "${item.selectedColor}" n'est pas disponible pour ce produit.`, {
+          code: 'INVALID_VARIANT',
+        });
+      }
+    }
+
+    // Validate selectedSize if product has sizes
+    if (item.selectedSize && Array.isArray(product.sizes) && product.sizes.length > 0) {
+      if (!product.sizes.includes(item.selectedSize)) {
+        throw new HttpError(StatusCodes.BAD_REQUEST, `La taille "${item.selectedSize}" n'est pas disponible pour ce produit.`, {
+          code: 'INVALID_VARIANT',
+        });
+      }
+    }
+  }
+
   const pricedItems = normalizedItems.map((item) => {
     const product = productMap.get(item.productId);
 
@@ -106,10 +147,23 @@ export const createGuestOrder = async ({
       });
     }
 
-    return createPricedOrderItem({ product: product as any, quantity: item.quantity });
+    return createPricedOrderItem({
+      product: product as any,
+      quantity: item.quantity,
+      ...(item.selectedColor ? { selectedColor: item.selectedColor } : {}),
+      ...(item.selectedSize ? { selectedSize: item.selectedSize } : {}),
+    });
   });
 
-  await reserveStock(normalizedItems);
+  // Reserve stock at product level (all variants share the same pool)
+  const stockItems = [...new Map(
+    normalizedItems.map((item) => [item.productId, { productId: item.productId, quantity: 0 }]),
+  ).values()];
+  for (const item of normalizedItems) {
+    const entry = stockItems.find((s) => s.productId === item.productId);
+    if (entry) entry.quantity += item.quantity;
+  }
+  await reserveStock(stockItems);
 
   const reference = await generateUniqueOrderReference();
   const totals = calculateOrderTotals(pricedItems);
