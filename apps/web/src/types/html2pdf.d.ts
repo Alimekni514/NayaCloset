@@ -18,17 +18,19 @@ declare module 'html2pdf.js' {
       format?: string | [number, number];
       orientation?: 'portrait' | 'landscape';
       compress?: boolean;
+      /** jsPDF hotfixes, e.g. ['px_scaling'] to correct DPI scaling issues */
+      hotfixes?: string[];
     };
     pagebreak?: {
       mode?: string[];
-      before?: string;
-      after?: string;
-      avoid?: string;
+      before?: string | string[];
+      after?: string | string[];
+      avoid?: string | string[];
     };
   }
 
   interface Html2PdfWorker {
-    from(element: HTMLElement | string): Html2PdfWorker;
+    from(element: HTMLElement | Element | string): Html2PdfWorker;
     set(options: Html2PdfOptions): Html2PdfWorker;
     toContainer(): Html2PdfWorker;
     toCanvas(): Html2PdfWorker;

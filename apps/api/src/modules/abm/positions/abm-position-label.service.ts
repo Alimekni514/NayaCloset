@@ -307,11 +307,14 @@ const buildWrappedPreviewHtml = async ({
 
   if (isNormal) {
     const normalizedContentHtml = normalizeNormalLabelSignatureRow(contentHtml);
-    const bodyStyles = mode === 'pdf'
-      ? 'margin: 0; padding: 5mm; background: #fff; color: #000; font-family: "Times New Roman", "Liberation Serif", Times, serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; width: 100%; box-sizing: border-box;'
-      : 'margin: 0 auto; padding: 5mm; background: #fff; color: #000; font-family: "Times New Roman", "Liberation Serif", Times, serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; max-width: 210mm; box-sizing: border-box;';
-    const pageRule = '@page { size: A5 landscape; margin: 0; }';
 
+    // -----------------------------------------------------------------------
+    // Normal label: A4 Landscape — measured from official ABM reference PDF
+    //   MediaBox: 841.92 × 594.96 pt = 297.01 × 209.89 mm
+    // Preview mode: same HTML, browser Ctrl+P honours the @page rule.
+    // PDF mode: same HTML loaded in an off-screen iframe and captured by
+    //   html2canvas/jsPDF in the frontend PDF generator.
+    // -----------------------------------------------------------------------
     return [
       '<!doctype html>',
       '<html lang="fr">',
@@ -320,29 +323,64 @@ const buildWrappedPreviewHtml = async ({
       '<meta name="viewport" content="width=device-width, initial-scale=1" />',
       `<title>${escapeHtml(title)}</title>`,
       '<style>',
-      pageRule,
-      'html { background: #fff; }',
-      `body { ${bodyStyles} }`,
+      // Exact A4 landscape – matches official ABM PDF dimensions
+      '@page { size: 297mm 210mm landscape; margin: 0; }',
+      'html {',
+      '  background: #fff;',
+      '  -webkit-print-color-adjust: exact;',
+      '  print-color-adjust: exact;',
+      '}',
+      'body {',
+      '  margin: 0;',
+      '  padding: 3mm;',
+      '  background: #fff;',
+      '  color: #000;',
+      '  font-family: "Times New Roman", "Liberation Serif", Times, serif;',
+      '  font-size: 10pt;',
+      '  line-height: 1.2;',
+      '  width: 297mm;',
+      '  min-height: 210mm;',
+      '  box-sizing: border-box;',
+      '  overflow: hidden;',
+      '}',
+      // Capture root — used by html2pdf to target the label
+      '#abm-label-root {',
+      '  width: 100%;',
+      '  page-break-inside: avoid;',
+      '  break-inside: avoid;',
+      '  page-break-after: avoid;',
+      '  break-after: avoid;',
+      '}',
+      // Tables: solid black borders, no rounded corners — matches official ABM
       'table { border-collapse: collapse; border-spacing: 0; width: 100%; }',
-      'table[border="1"] { border: 3px solid #000; border-radius: 0; }',
-      'table[border="1"] td, table[border="1"] th { border: 1px solid #000; padding: 4px; vertical-align: middle; text-align: center; }',
-      'table[border="1"] > tbody > tr:first-child > td { border-top: none; }',
-      'table[border="1"] > tbody > tr > td:first-child { border-left: none; }',
-      'table[border="1"] > tbody > tr > td:last-child { border-right: none; }',
-      'table[border="1"] > tbody > tr:last-child > td { border-bottom: none; }',
+      'table[border="1"] { border: 2px solid #000; border-radius: 0; }',
+      'table[border="1"] td, table[border="1"] th {',
+      '  border: 1px solid #000;',
+      '  padding: 2px 4px;',
+      '  vertical-align: middle;',
+      '  font-family: "Times New Roman", "Liberation Serif", Times, serif;',
+      '}',
+      // SVG barcodes — keep crisp
       'svg { display: block; overflow: visible; shape-rendering: crispEdges; text-rendering: geometricPrecision; }',
-      'svg rect { shape-rendering: crispEdges; }',
-      'svg path { shape-rendering: crispEdges; }',
-      'svg line { shape-rendering: crispEdges; }',
+      'svg rect, svg path, svg line { shape-rendering: crispEdges; }',
       'svg text { fill: #000 !important; text-rendering: geometricPrecision; }',
       'svg[id^="barcode_"], svg[id^="barcodest_"] { background: #fff; }',
+      // Links and inputs
       'a, a:visited, a:hover { color: inherit !important; text-decoration: none !important; }',
       'input[type="checkbox"] { accent-color: #8d8d8d; }',
+      // Print media — ensure no browser default margins override @page
+      '@media print {',
+      '  html, body { margin: 0; padding: 3mm; width: 297mm; height: 210mm; overflow: hidden; }',
+      '  #abm-label-root { page-break-inside: avoid !important; break-inside: avoid !important; }',
+      '  .abm-print-toolbar { display: none !important; }',
+      '}',
       printCss,
       '</style>',
       '</head>',
       '<body>',
+      '<div id="abm-label-root">',
       normalizedContentHtml,
+      '</div>',
       '<script>',
       barcodeLibrary,
       '</script>',
@@ -354,6 +392,11 @@ const buildWrappedPreviewHtml = async ({
     ].join('\n');
   }
 
+  // -------------------------------------------------------------------------
+  // Zebra label — no official reference PDF available for pixel-perfect sizing.
+  // Keep existing A4 preview layout; fix only renders the content cleanly.
+  // TODO: provide official Zebra reference PDF for exact dimension calibration.
+  // -------------------------------------------------------------------------
   const rootClass = 'print-variant-zebra';
 
   return [
@@ -367,24 +410,24 @@ const buildWrappedPreviewHtml = async ({
     '@page { size: A4; margin: 10mm; }',
     'html, body { margin: 0; padding: 0; background: #fff; color: #111827; }',
     'body { font-family: Arial, sans-serif; }',
+    '#abm-label-root {',
+    '  width: 100%;',
+    '  page-break-inside: avoid;',
+    '  break-inside: avoid;',
+    '}',
     '.preview-shell { padding: 24px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; box-sizing: border-box; }',
     '.print-page { page-break-after: always; }',
-    '.print-variant-normal > * { width: 50%; max-width: 50%; margin: 0 auto; }',
-    '.print-variant-zebra > * { width: 100%; max-width: 100%; margin: 0 auto; }',
+    `.print-variant-zebra > * { width: 100%; max-width: 100%; margin: 0 auto; }`,
     '.preview-shell, .preview-shell * { color: #111111; }',
     '.preview-shell a, .preview-shell a:visited, .preview-shell a:hover { color: inherit !important; text-decoration: none !important; }',
     '.preview-shell table { border-collapse: collapse !important; border-spacing: 0 !important; }',
     '.preview-shell table, .preview-shell td, .preview-shell th { border-color: #b8b8b8 !important; }',
-    '.preview-shell [style*="border"] { border-color: #b8b8b8 !important; }',
-    '.preview-shell .printit > table, .preview-shell #printit > table, .preview-shell #printit table:first-of-type { border: 2px solid #222222 !important; }',
-    '.preview-shell tr + tr td, .preview-shell tr + tr th, .preview-shell td + td, .preview-shell th + th { border-color: #c7c7c7 !important; }',
-    '.preview-shell svg, .preview-shell svg * { stroke: #111111 !important; fill: #111111; }',
-    '@media print { .preview-shell { padding: 0; display: block; } .print-variant-normal > * { width: 50%; max-width: 50%; } .print-variant-zebra > * { width: 100%; max-width: 100%; } }',
+    '@media print { .preview-shell { padding: 0; display: block; } }',
     printCss,
     '</style>',
     '</head>',
     '<body>',
-    `<main class="preview-shell"><section class="print-page ${rootClass}">${contentHtml}</section></main>`,
+    `<main class="preview-shell"><section id="abm-label-root" class="print-page ${rootClass}">${contentHtml}</section></main>`,
     '<script>',
     barcodeLibrary,
     '</script>',
@@ -395,6 +438,7 @@ const buildWrappedPreviewHtml = async ({
     '</html>',
   ].join('\n');
 };
+
 
 const buildPdfWrapperHtml = (positionId: string, variant: AbmDetailPrintVariant, body: Buffer): string => {
   const dataUrl = `data:application/pdf;base64,${body.toString('base64')}`;
