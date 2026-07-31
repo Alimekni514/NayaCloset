@@ -21,11 +21,13 @@ export const toProductDto = (product: any): ProductDto => ({
   updatedAt: product.updatedAt.toISOString(),
   ...(product.category ? { category: product.category } : {}),
   ...(product.deliveryFeeCents != null ? { deliveryFeeCents: product.deliveryFeeCents } : {}),
+  ...(product.sizes?.length ? { sizes: product.sizes } : {}),
   ...(product.colorVariants?.length
     ? {
         colorVariants: product.colorVariants.map((v: any) => ({
           color: v.color,
           imageUrl: v.imageUrl,
+          ...(v.availableSizes?.length ? { availableSizes: v.availableSizes } : {}),
         })),
       }
     : {}),

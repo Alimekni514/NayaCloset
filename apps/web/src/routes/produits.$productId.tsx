@@ -30,7 +30,7 @@ type VariantLine = {
   quantity: number;
 };
 
-function ProductPage() {
+export function ProductPage() {
   const { productId } = Route.useParams();
   const { data: product, isLoading, error, refetch } = useProduct(productId);
   const { addToCart, toggleFavorite, isFavorite, setCartOpen } = useStore();
@@ -44,8 +44,9 @@ function ProductPage() {
   // Pending variant lines the user is building before committing to cart
   const [pendingLines, setPendingLines] = useState<VariantLine[]>([]);
 
-  const hasColorVariants = product?.colorVariants && product.colorVariants.length > 0;
-  const hasSizes = product?.sizes && product.sizes.length > 0;
+  const hasColorVariants = (product?.colorVariants?.length ?? 0) > 0;
+  const hasSizes = (product?.sizes?.length ?? 0) > 0;
+  const isConfigurableProduct = hasColorVariants && hasSizes;
 
   // Resolve displayed image based on active color
   const displayedImage = (() => {
@@ -94,21 +95,30 @@ function ProductPage() {
     setSelectorQty(1);
   };
 
+  const handleDirectAdd = () => {
+    if (!product) return;
+    
+    // Check if simple color product
+    const colorLabel = hasColorVariants && activeColor ? activeColor : undefined;
+    const colorImageUrl = colorLabel 
+      ? (product.colorVariants?.find((v) => v.color === colorLabel)?.imageUrl ?? product.images[0])
+      : product.images[0];
+
+    addToCart({
+      productId: product.id,
+      quantity: selectorQty,
+      name: product.name,
+      ...(colorImageUrl ? { imageUrl: colorImageUrl } : {}),
+      ...(colorLabel ? { selectedColor: colorLabel } : {}),
+      unitPrice: product.price,
+    });
+    setCartOpen(true);
+    toast.success("Ajouté au panier", { description: product.name });
+  };
+
   const handleCommitToCart = () => {
     if (!product) return;
-    if (pendingLines.length === 0) {
-      // No pending lines — direct add (products without variants)
-      addToCart({
-        productId: product.id,
-        quantity: selectorQty,
-        name: product.name,
-        ...(product.images[0] ? { imageUrl: product.images[0] } : {}),
-        unitPrice: product.price,
-      });
-      setCartOpen(true);
-      toast.success("Ajouté au panier", { description: product.name });
-      return;
-    }
+    if (pendingLines.length === 0) return;
 
     for (const line of pendingLines) {
       addToCart({
@@ -284,62 +294,104 @@ function ProductPage() {
                 )}
 
                 {/* ── Quantity + add variant ── */}
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  {/* Quantity control */}
-                  <div className="flex items-center rounded-xl border">
-                    <button
-                      type="button"
-                      onClick={() => setSelectorQty((q) => Math.max(1, q - 1))}
-                      className="flex size-10 items-center justify-center rounded-l-xl hover:bg-muted"
-                      aria-label="Diminuer la quantité"
-                    >
-                      <Minus className="size-4" />
-                    </button>
-                    <span className="w-10 text-center text-sm font-semibold">{selectorQty}</span>
-                    <button
-                      type="button"
-                      onClick={() => setSelectorQty((q) => Math.min(20, q + 1))}
-                      className="flex size-10 items-center justify-center rounded-r-xl hover:bg-muted"
-                      aria-label="Augmenter la quantité"
-                    >
-                      <Plus className="size-4" />
-                    </button>
-                  </div>
+                {isConfigurableProduct ? (
+                  <div className="mt-4 flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center rounded-xl border">
+                        <button
+                          type="button"
+                          onClick={() => setSelectorQty((q) => Math.max(1, q - 1))}
+                          className="flex size-10 items-center justify-center rounded-l-xl hover:bg-muted"
+                          aria-label="Diminuer la quantité"
+                        >
+                          <Minus className="size-4" />
+                        </button>
+                        <span className="w-10 text-center text-sm font-semibold">{selectorQty}</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectorQty((q) => Math.min(20, q + 1))}
+                          className="flex size-10 items-center justify-center rounded-r-xl hover:bg-muted"
+                          aria-label="Augmenter la quantité"
+                        >
+                          <Plus className="size-4" />
+                        </button>
+                      </div>
 
-                  {/* Add variant button (shown when product has sizes) */}
-                  {hasSizes ? (
+                      <Button
+                        variant="outline"
+                        disabled={product.stock === 0}
+                        onClick={handleAddVariant}
+                      >
+                        <Plus className="size-4" />
+                        Ajouter cette variante
+                      </Button>
+
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        onClick={() => toggleFavorite(product.id)}
+                        aria-pressed={isFavorite(product.id)}
+                      >
+                        <Heart className={cn("size-4", isFavorite(product.id) && "fill-destructive text-destructive")} />
+                        Favori
+                      </Button>
+                    </div>
+
                     <Button
-                      variant="outline"
-                      disabled={product.stock === 0}
-                      onClick={handleAddVariant}
+                      size="lg"
+                      disabled={product.stock === 0 || pendingLines.length === 0}
+                      onClick={handleCommitToCart}
+                      className="w-full sm:w-auto sm:self-start"
                     >
-                      <Plus className="size-4" />
-                      Ajouter cette variante
+                      <ShoppingBag className="size-4" />
+                      {pendingLines.length > 0 ? `Ajouter au panier (${pendingLines.reduce((s, l) => s + l.quantity, 0)})` : "Ajouter au panier"}
                     </Button>
-                  ) : null}
+                  </div>
+                ) : (
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <div className="flex items-center rounded-xl border">
+                      <button
+                        type="button"
+                        onClick={() => setSelectorQty((q) => Math.max(1, q - 1))}
+                        className="flex size-10 items-center justify-center rounded-l-xl hover:bg-muted"
+                        aria-label="Diminuer la quantité"
+                      >
+                        <Minus className="size-4" />
+                      </button>
+                      <span className="w-10 text-center text-sm font-semibold">{selectorQty}</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectorQty((q) => Math.min(20, q + 1))}
+                        className="flex size-10 items-center justify-center rounded-r-xl hover:bg-muted"
+                        aria-label="Augmenter la quantité"
+                      >
+                        <Plus className="size-4" />
+                      </button>
+                    </div>
 
-                  <Button
-                    size="lg"
-                    disabled={product.stock === 0 || (hasSizes && pendingLines.length === 0 && !activeSize)}
-                    onClick={handleCommitToCart}
-                  >
-                    <ShoppingBag className="size-4" />
-                    {pendingLines.length > 0 ? `Ajouter au panier (${pendingLines.reduce((s, l) => s + l.quantity, 0)})` : "Ajouter au panier"}
-                  </Button>
+                    <Button
+                      size="lg"
+                      disabled={product.stock === 0}
+                      onClick={handleDirectAdd}
+                    >
+                      <ShoppingBag className="size-4" />
+                      Ajouter au panier
+                    </Button>
 
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => toggleFavorite(product.id)}
-                    aria-pressed={isFavorite(product.id)}
-                  >
-                    <Heart className={cn("size-4", isFavorite(product.id) && "fill-destructive text-destructive")} />
-                    Favori
-                  </Button>
-                </div>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={() => toggleFavorite(product.id)}
+                      aria-pressed={isFavorite(product.id)}
+                    >
+                      <Heart className={cn("size-4", isFavorite(product.id) && "fill-destructive text-destructive")} />
+                      Favori
+                    </Button>
+                  </div>
+                )}
 
                 {/* ── Pending variant lines ── */}
-                {pendingLines.length > 0 && (
+                {isConfigurableProduct && pendingLines.length > 0 && (
                   <div className="mt-6 space-y-3">
                     <p className="text-sm font-semibold">Variantes sélectionnées</p>
                     <ul className="space-y-2">
