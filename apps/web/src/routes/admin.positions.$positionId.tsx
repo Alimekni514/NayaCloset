@@ -26,13 +26,11 @@ import {
 } from '@/features/admin/abm-position-detail';
 import { abmPositionsQueryKey, useDeleteAbmPosition } from '@/features/admin/abm-positions-list';
 import {
-  createPreviewPopup,
   getPositionLabelActionKind,
   getPositionLabelActionVariant,
   isPreviewAction,
   PopupBlockedError,
   presentPositionLabelDocument,
-  setPreviewLoadingDocument,
   type PositionLabelAction,
 } from '@/features/admin/abm-position-detail/lib/position-label-download';
 
@@ -241,16 +239,6 @@ function PositionDetailPage() {
   };
 
   const handlePrint = async (action: PositionLabelAction) => {
-    const popup = createPreviewPopup(action);
-
-    if (isPreviewAction(action) && popup === null) {
-      toast.error(
-        "Le navigateur a bloque l'ouverture de l'etiquette. Autorisez les fenetres contextuelles puis reessayez.",
-      );
-      return;
-    }
-
-    setPreviewLoadingDocument(popup);
     setPrintLoadingAction(action);
 
     try {
@@ -261,16 +249,12 @@ function PositionDetailPage() {
         label,
         action,
         positionId,
-        popup,
       });
 
       if (kind === 'pdf') {
         toast.success('PDF prepare', { description: result.filename });
       }
     } catch (error) {
-      if (popup) {
-        popup.close();
-      }
       if (error instanceof PopupBlockedError) {
         toast.error(
           "Le navigateur a bloque l'ouverture de l'etiquette. Autorisez les fenetres contextuelles puis reessayez.",

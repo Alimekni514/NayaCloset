@@ -3,7 +3,6 @@ import { StatusCodes } from 'http-status-codes';
 
 import { getAbmPositionDetail } from './abm-position-detail.service';
 import { buildPositionLabelPreview } from './abm-position-label.service';
-import { generatePositionLabelPdf } from './abm-position-label-pdf.service';
 import type { AbmDetailPrintVariant } from './abm-position-detail.types';
 
 const setNoStoreHeaders = (res: Response) => {
@@ -39,23 +38,26 @@ export const getAbmPositionLabelPreviewController = async (
   res.status(StatusCodes.OK).send(preview.body);
 };
 
+import { fetchUpstreamPositionLabel } from './abm-position-label.service';
+
 export const getAbmPositionLabelPdfController = async (
   req: Request,
   res: Response,
   variant: AbmDetailPrintVariant,
 ) => {
-  const pdf = await generatePositionLabelPdf({
+  const upstream = await fetchUpstreamPositionLabel({
     positionId: String(req.params.positionId),
     format: variant,
   });
   const disposition = req.query.disposition === 'inline' ? 'inline' : 'attachment';
+  const filename = `ABM-position-${req.params.positionId}-${variant}.${upstream.category === 'zpl' ? 'zpl' : (upstream.category === 'image' ? 'png' : 'pdf')}`;
 
   setNoStoreHeaders(res);
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `${disposition}; filename="${pdf.filename}"`);
-  res.setHeader('Content-Length', String(pdf.body.length));
+  res.setHeader('Content-Type', upstream.contentType);
+  res.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`);
+  res.setHeader('Content-Length', String(upstream.contentLength));
 
-  res.status(StatusCodes.OK).send(pdf.body);
+  res.status(StatusCodes.OK).send(upstream.body);
 };
 
 export const getAbmPositionLabelController = async (

@@ -6,7 +6,6 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { AbmSessionManager } from '../src/modules/abm/abm.session-manager';
 import { resetAbmSessionManager } from '../src/modules/abm';
-import { __setPositionLabelPdfRendererForTests } from '../src/modules/abm/positions/abm-position-label-pdf.service';
 import { ABM_POSITION_FIELD_ORDER } from '../src/modules/abm/positions/abm-position.mapper';
 import { clearDatabase, connectTestDatabase, createAdminSession, disconnectTestDatabase, getApp } from './helpers';
 
@@ -720,7 +719,6 @@ describe('ABM dashboard integration', () => {
     zebraLabelContentType = 'text/html; charset=utf-8';
     normalLabelBody = labelPageHtml;
     zebraLabelBody = labelPageHtml.replace('width:50%; max-width:50%;', 'width:100%; max-width:100%;');
-    __setPositionLabelPdfRendererForTests(null);
   });
 
   it('extracts the login csrf token, sends the exact form fields, and reuses a valid session', async () => {
