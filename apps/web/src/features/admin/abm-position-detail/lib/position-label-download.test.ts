@@ -52,7 +52,7 @@ describe('position label download helpers', () => {
       .spyOn(URL, 'createObjectURL')
       .mockReturnValueOnce('blob:pdf')
       .mockReturnValueOnce('blob:preview');
-    const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => { });
 
     presentPositionLabelDocument({
       label: {
@@ -77,7 +77,7 @@ describe('position label download helpers', () => {
     vi.useFakeTimers();
     mockUrlApis();
     const createObjectUrlSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:pdf');
-    const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => { });
     const clickSpy = vi.fn();
     const anchor = document.createElement('a');
     anchor.click = clickSpy;
@@ -104,7 +104,7 @@ describe('position label download helpers', () => {
   it('throws a popup-blocked error if a preview action has no popup window', () => {
     mockUrlApis();
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:blocked');
-    const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => { });
 
     expect(() =>
       presentPositionLabelDocument({

@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { AbmSessionManager } from '../src/modules/abm/abm.session-manager';
 import { resetAbmSessionManager } from '../src/modules/abm';
+import { __setPositionLabelPdfRendererForTests } from '../src/modules/abm/positions/abm-position-label-pdf.service';
 import { ABM_POSITION_FIELD_ORDER } from '../src/modules/abm/positions/abm-position.mapper';
 import { clearDatabase, connectTestDatabase, createAdminSession, disconnectTestDatabase, getApp } from './helpers';
 
@@ -719,6 +720,7 @@ describe('ABM dashboard integration', () => {
     zebraLabelContentType = 'text/html; charset=utf-8';
     normalLabelBody = labelPageHtml;
     zebraLabelBody = labelPageHtml.replace('width:50%; max-width:50%;', 'width:100%; max-width:100%;');
+    __setPositionLabelPdfRendererForTests(null);
   });
 
   it('extracts the login csrf token, sends the exact form fields, and reuses a valid session', async () => {
@@ -1294,22 +1296,29 @@ describe('ABM dashboard integration', () => {
     expect(zebra.text).not.toContain('#1d4ed8');
   });
 
-  it('returns generated PDFs for normal and zebra labels', async () => {
+  it('returns printable HTML documents for normal and zebra label downloads', async () => {
+    // ABM returns HTML for label endpoints — not PDF bytes.
+    // The /pdf route downloads sanitized printable HTML (.html extension).
+    // Users open the downloaded file in a browser and use print > save as PDF.
     const { agent: adminAgent } = await createAdminSession();
-    __setPositionLabelPdfRendererForTests(async (html) => Buffer.from(`%PDF-FAKE\n${html.slice(0, 60)}`, 'utf-8'));
 
     const normal = await adminAgent.get('/api/admin/abm/positions/469384/labels/normal/pdf');
     expect(normal.status).toBe(200);
-    expect(normal.headers['content-type']).toContain('application/pdf');
-    expect(normal.headers['content-disposition']).toContain('attachment; filename="ABM-position-469384-normal.pdf"');
+    // Must be text/html — NOT application/pdf (no PDF generator exists)
+    expect(normal.headers['content-type']).toContain('text/html');
+    // Filename must use .html — truthful about the actual content type
+    expect(normal.headers['content-disposition']).toContain('attachment; filename="ABM-position-469384-normal.html"');
     expect(normal.headers['cache-control']).toBe('private, no-store');
-    expect(Buffer.from(normal.body).subarray(0, 4).toString('utf-8')).toBe('%PDF');
+    // Content is the sanitized printable HTML wrapping the ABM label
+    expect(normal.text).toContain('419000467642');
+    expect(normal.text).toContain('<!doctype html>');
 
     const zebra = await adminAgent.get('/api/admin/abm/positions/469384/labels/zebra/pdf?disposition=inline');
     expect(zebra.status).toBe(200);
-    expect(zebra.headers['content-type']).toContain('application/pdf');
-    expect(zebra.headers['content-disposition']).toContain('inline; filename="ABM-position-469384-zebra.pdf"');
-    expect(Buffer.from(zebra.body).subarray(0, 4).toString('utf-8')).toBe('%PDF');
+    expect(zebra.headers['content-type']).toContain('text/html');
+    expect(zebra.headers['content-disposition']).toContain('inline; filename="ABM-position-469384-zebra.html"');
+    expect(zebra.text).toContain('419000467642');
+    expect(zebra.text).toContain('<!doctype html>');
   });
 
   it('re-authenticates once when the preview endpoint responds with a login page', async () => {

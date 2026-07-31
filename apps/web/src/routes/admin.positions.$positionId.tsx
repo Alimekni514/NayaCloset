@@ -26,11 +26,13 @@ import {
 } from '@/features/admin/abm-position-detail';
 import { abmPositionsQueryKey, useDeleteAbmPosition } from '@/features/admin/abm-positions-list';
 import {
+  createPreviewPopup,
   getPositionLabelActionKind,
   getPositionLabelActionVariant,
   isPreviewAction,
   PopupBlockedError,
   presentPositionLabelDocument,
+  setPreviewLoadingDocument,
   type PositionLabelAction,
 } from '@/features/admin/abm-position-detail/lib/position-label-download';
 
@@ -127,9 +129,6 @@ function mapPrintError(error: unknown): string {
     if (code === 'ABM_LABEL_FETCH_FAILED') {
       return "Impossible de previsualiser l'etiquette.";
     }
-    if (code === 'ABM_LABEL_PDF_GENERATION_FAILED') {
-      return "Impossible de generer le PDF de l'etiquette.";
-    }
   }
 
   return "Impossible de preparer l'etiquette.";
@@ -190,8 +189,8 @@ function PositionDetailPage() {
   const listData =
     search.from && search.to
       ? queryClient.getQueryData<{
-          items: AbmPositionListItem[];
-        }>(abmPositionsQueryKey({ from: search.from, to: search.to }))
+        items: AbmPositionListItem[];
+      }>(abmPositionsQueryKey({ from: search.from, to: search.to }))
       : undefined;
 
   const listItem = listData?.items.find((item) => item.id === positionId);
@@ -239,6 +238,16 @@ function PositionDetailPage() {
   };
 
   const handlePrint = async (action: PositionLabelAction) => {
+    const popup = createPreviewPopup(action);
+
+    if (isPreviewAction(action) && popup === null) {
+      toast.error(
+        "Le navigateur a bloque l'ouverture de l'etiquette. Autorisez les fenetres contextuelles puis reessayez.",
+      );
+      return;
+    }
+
+    setPreviewLoadingDocument(popup);
     setPrintLoadingAction(action);
 
     try {
@@ -249,12 +258,16 @@ function PositionDetailPage() {
         label,
         action,
         positionId,
+        popup,
       });
 
       if (kind === 'pdf') {
-        toast.success('PDF prepare', { description: result.filename });
+        toast.success('Document pret', { description: result.filename });
       }
     } catch (error) {
+      if (popup) {
+        popup.close();
+      }
       if (error instanceof PopupBlockedError) {
         toast.error(
           "Le navigateur a bloque l'ouverture de l'etiquette. Autorisez les fenetres contextuelles puis reessayez.",

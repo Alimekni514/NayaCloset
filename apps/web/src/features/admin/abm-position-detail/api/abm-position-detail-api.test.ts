@@ -13,13 +13,16 @@ vi.mock('@/lib/api-client', () => ({
 import { fetchAbmPositionLabelDocument } from './abm-position-detail-api';
 
 describe('abm position detail api label documents', () => {
-  it('requests inline pdf previews through the authenticated api client', async () => {
+  it('requests inline label previews through the authenticated api client', async () => {
+    // The preview endpoint returns sanitized HTML (not PDF) — ABM label pages are HTML.
     getMock.mockResolvedValueOnce({
       status: 200,
-      data: new Blob(['%PDF-1.7'], { type: 'application/pdf' }),
+      data: new Blob(['<!doctype html><html>...</html>'], { type: 'text/html; charset=utf-8' }),
       headers: {
-        'content-type': 'application/pdf',
-        'content-disposition': 'inline; filename="ABM-position-467642-normal.pdf"',
+        'content-type': 'text/html; charset=utf-8',
+        // The route still uses the /labels/normal/pdf path with ?disposition=inline
+        // for backward compatibility, but returns HTML with an .html filename.
+        'content-disposition': 'inline; filename="ABM-position-467642-normal.html"',
       },
     });
 
@@ -28,18 +31,20 @@ describe('abm position detail api label documents', () => {
     expect(getMock).toHaveBeenCalledWith('/admin/abm/positions/467642/labels/normal/pdf?disposition=inline', {
       responseType: 'blob',
     });
-    expect(result.contentType).toBe('application/pdf');
-    expect(result.filename).toBe('ABM-position-467642-normal.pdf');
+    expect(result.contentType).toBe('text/html; charset=utf-8');
+    expect(result.filename).toBe('ABM-position-467642-normal.html');
     expect(result.blob.size).toBeGreaterThan(0);
   });
 
-  it('requests pdf downloads through the authenticated api client', async () => {
+  it('requests label downloads through the authenticated api client', async () => {
+    // The download endpoint returns sanitized HTML with attachment disposition.
+    // Filename uses .html — truthful about the actual content type returned.
     getMock.mockResolvedValueOnce({
       status: 200,
-      data: new Blob(['%PDF-1.7'], { type: 'application/pdf' }),
+      data: new Blob(['<!doctype html><html>...</html>'], { type: 'text/html; charset=utf-8' }),
       headers: {
-        'content-type': 'application/pdf',
-        'content-disposition': 'attachment; filename="ABM-position-467642-zebra.pdf"',
+        'content-type': 'text/html; charset=utf-8',
+        'content-disposition': 'attachment; filename="ABM-position-467642-zebra.html"',
       },
     });
 
@@ -53,9 +58,9 @@ describe('abm position detail api label documents', () => {
   it('rejects empty label blobs with a safe error envelope', async () => {
     getMock.mockResolvedValueOnce({
       status: 200,
-      data: new Blob([], { type: 'application/pdf' }),
+      data: new Blob([], { type: 'text/html; charset=utf-8' }),
       headers: {
-        'content-type': 'application/pdf',
+        'content-type': 'text/html; charset=utf-8',
       },
     });
 

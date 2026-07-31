@@ -24,8 +24,23 @@ export const getPositionLabelActionKind = (action: PositionLabelAction): AbmLabe
 
 export const isPreviewAction = (action: PositionLabelAction): boolean => action.startsWith('preview');
 
-export function openPreviewPopup(url: string): Window | null {
-  return window.open(url, '_blank', 'noopener,noreferrer');
+export function createPreviewPopup(action: PositionLabelAction): Window | null {
+  if (!isPreviewAction(action)) {
+    return null;
+  }
+
+  return window.open('', '_blank');
+}
+
+export function setPreviewLoadingDocument(popup: Window | null) {
+  if (!popup) {
+    return;
+  }
+
+  popup.document.write(
+    '<!doctype html><html lang="fr"><head><meta charset="utf-8" /><title>Preparation</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:Arial,sans-serif;color:#111827;background:#fff}p{padding:24px;font-size:16px}</style></head><body><p>Preparation de l\'etiquette...</p></body></html>',
+  );
+  popup.document.close();
 }
 
 const buildPdfPreviewHtml = (pdfUrl: string, title: string) =>
@@ -69,10 +84,12 @@ export function presentPositionLabelDocument({
   label,
   action,
   positionId,
+  popup,
 }: {
   label: AbmPositionLabelBlobResponse;
   action: PositionLabelAction;
   positionId: string;
+  popup: Window | null;
 }) {
   const variant = getPositionLabelActionVariant(action);
   const kind = getPositionLabelActionKind(action);
@@ -81,22 +98,20 @@ export function presentPositionLabelDocument({
   const urlsToRevoke = [objectUrl];
 
   if (kind === 'preview') {
-    let finalUrl = objectUrl;
+    if (!popup || popup.closed) {
+      URL.revokeObjectURL(objectUrl);
+      throw new PopupBlockedError();
+    }
+
     if (label.contentType.toLowerCase().includes('application/pdf')) {
       const wrapperBlob = new Blob([buildPdfPreviewHtml(objectUrl, filename)], {
         type: 'text/html; charset=utf-8',
       });
       const wrapperUrl = URL.createObjectURL(wrapperBlob);
       urlsToRevoke.push(wrapperUrl);
-      finalUrl = wrapperUrl;
-    }
-
-    const popup = openPreviewPopup(finalUrl);
-    if (!popup) {
-      for (const url of urlsToRevoke) {
-        URL.revokeObjectURL(url);
-      }
-      throw new PopupBlockedError();
+      popup.location.replace(wrapperUrl);
+    } else {
+      popup.location.replace(objectUrl);
     }
   } else {
     const link = document.createElement('a');
